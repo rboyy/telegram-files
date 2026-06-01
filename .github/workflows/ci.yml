@@ -6,10 +6,20 @@ on:
     branches: [ "dev", "main" ]
     paths:
       - 'api/**'
+      - 'web/**'
+      - '.github/**'
+      - 'Dockerfile'
+      - 'docker-compose.yaml'
+      - 'README.md'
   pull_request:
     branches: [ "main", "dev" ]
     paths:
       - 'api/**'
+      - 'web/**'
+      - '.github/**'
+      - 'Dockerfile'
+      - 'docker-compose.yaml'
+      - 'README.md'
 
 jobs:
   build:
