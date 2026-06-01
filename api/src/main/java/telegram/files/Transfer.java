@@ -165,6 +165,7 @@ public abstract class Transfer {
             String name = FileUtil.getName(fileRecord.localPath());
             String chatName = getChatName(fileRecord);
             return Path.of(destination,
+                    String.valueOf(fileRecord.telegramId()),
                     chatName,
                     name
             ).toString();
