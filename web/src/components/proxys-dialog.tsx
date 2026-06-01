@@ -28,13 +28,13 @@ export default function ProxysDialog({
 
   const triggerTooltipContent = useMemo(() => {
     if (!telegramId) {
-      return "You can add proxys for telegram connection.";
+      return "您可以为 Telegram 连接添加代理。";
     }
     return (
       <>
-        {isLoading && "Testing network..."}
-        {!isLoading && data?.success && "Successfully connect to telegram"}
-        {!isLoading && !data?.success && "Failed to connect to telegram"}
+        {isLoading && "测试网络中..."}
+        {!isLoading && data?.success && "成功连接到 Telegram"}
+        {!isLoading && !data?.success && "连接到 Telegram 失败"}
       </>
     );
   }, [data, isLoading, telegramId]);

@@ -18,11 +18,11 @@ import { Label } from "@/components/ui/label";
 
 const statusOptions = {
   downloadStatus: {
-    text: "Download Status",
+    text: "下载状态",
     status: DOWNLOAD_STATUS,
   },
   transferStatus: {
-    text: "Transfer Status",
+    text: "转移状态",
     status: TRANSFER_STATUS,
   },
 };
@@ -70,7 +70,7 @@ export default function FileStatusFilter({
 
   const statusDisplayValue = useMemo(() => {
     if (!localDownloadStatus && !localTransferStatus) {
-      return "Filter Status";
+      return "筛选状态";
     }
     const downloadStatus =
       localDownloadStatus && DOWNLOAD_STATUS[localDownloadStatus];
@@ -81,13 +81,13 @@ export default function FileStatusFilter({
       <div className="flex items-center space-x-2">
         {downloadStatus && (
           <div className="flex items-center space-x-1 rounded bg-gray-100 p-1 dark:bg-gray-800">
-            <span className="text-xs">Download</span>
+            <span className="text-xs">下载</span>
             <downloadStatus.icon className="h-3 w-3" />
           </div>
         )}
         {transferStatus && (
           <div className="flex items-center space-x-1 rounded bg-gray-100 p-1 dark:bg-gray-800">
-            <span className="text-xs">Transfer</span>
+            <span className="text-xs">转移</span>
             <transferStatus.icon className="h-3 w-3" />
           </div>
         )}
@@ -97,13 +97,13 @@ export default function FileStatusFilter({
 
   return (
     <div className="space-y-2">
-      <Label>Status</Label>
+      <Label>状态</Label>
       <Select
         value={`${localDownloadStatus ?? ""}||${localTransferStatus ?? ""}`}
         onValueChange={(value) => handleStatusSelect(value)}
       >
         <SelectTrigger>
-          <SelectValue placeholder="Filter Status">
+          <SelectValue placeholder="筛选状态">
             {statusDisplayValue}
           </SelectValue>
         </SelectTrigger>

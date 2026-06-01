@@ -18,27 +18,27 @@ export const DOWNLOAD_STATUS = {
   idle: {
     icon: Clock,
     className: "bg-gray-100 text-gray-600",
-    text: "Idle",
+    text: "空闲",
   },
   downloading: {
     icon: Download,
     className: "bg-blue-100 text-blue-600",
-    text: "Downloading",
+    text: "下载中",
   },
   paused: {
     icon: Pause,
     className: "bg-yellow-100 text-yellow-600",
-    text: "Paused",
+    text: "已暂停",
   },
   completed: {
     icon: CheckCircle2,
     className: "bg-green-100 text-green-600",
-    text: "Completed",
+    text: "已完成",
   },
   error: {
     icon: XCircle,
     className: "bg-red-100 text-red-600",
-    text: "Error",
+    text: "错误",
   },
 };
 
@@ -46,22 +46,22 @@ export const TRANSFER_STATUS = {
   idle: {
     icon: Clock,
     className: "bg-gray-100 text-gray-600",
-    text: "Idle",
+    text: "空闲",
   },
   transferring: {
     icon: FolderSync,
     className: "bg-blue-100 text-blue-600",
-    text: "Transferring",
+    text: "转移中",
   },
   completed: {
     icon: CheckCircle2,
     className: "bg-green-100 text-green-600",
-    text: "Transferred",
+    text: "已转移",
   },
   error: {
     icon: XCircle,
     className: "bg-red-100 text-red-600",
-    text: "Transfer Error",
+    text: "转移错误",
   },
 };
 
@@ -96,7 +96,7 @@ export default function FileStatus({
             animate="animate"
             exit="exit"
           >
-            <TooltipWrapper content="Download Status">
+            <TooltipWrapper content="下载状态">
               <Badge
                 className={cn(
                   "h-6 text-xs hover:bg-gray-200",
@@ -119,7 +119,7 @@ export default function FileStatus({
               animate="animate"
               exit="exit"
             >
-              <TooltipWrapper content="Transfer Status">
+              <TooltipWrapper content="转移状态">
                 <Badge
                   className={cn(
                     "h-6 text-xs hover:bg-gray-200",

@@ -1,14 +1,84 @@
 name: Build and Push Docker Image
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "dev", "main" ]
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - '.github/**'
+      - 'Dockerfile'
+      - 'docker-compose.yaml'
+      - 'README.md'
     tags:
       - 'v*'
-  workflow_dispatch:
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - '.github/**'
+      - 'Dockerfile'
+      - 'docker-compose.yaml'
+      - 'README.md'
 
 jobs:
-  build:
+  build-check:
+    name: Build Check
+    runs-on: 'ubuntu-24.04'
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache tdlib and config
+        id: cache-tdlib
+        uses: actions/cache@v4
+        with:
+          path: |
+            ../libs
+            ../.env.test
+          key: ${{ runner.os }}-tdlib-1.15.0
+
+      - name: Download tdlib and create .env.test file
+        if: steps.cache-tdlib.outputs.cache-hit != 'true'
+        run: |
+          cd ../ && \
+          wget --no-check-certificate -q -O libs.zip https://github.com/p-vorobyev/spring-boot-starter-telegram/releases/download/1.15.0/libs.zip && \
+          unzip -q libs.zip && \
+          cat <<EOF > .env.test
+          TDLIB_PATH=../libs/linux_x64
+          APP_ENV=prod
+          APP_ROOT=${{ github.workspace }}/data
+          TELEGRAM_API_ID=94575
+          TELEGRAM_API_HASH=a3406de8d171bb422bb6ddf3bbd800e2
+          LOG_LEVEL=FINE
+          EOF
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+  build-docker:
+    name: Build and Push Docker Image
+    needs: build-check
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -32,11 +32,18 @@ const FileTypeSelectItem = ({
   counts,
   isLoading,
 }: FileTypeSelectItemProps) => {
+  const typeNames: Record<string, string> = {
+    media: "媒体",
+    photo: "照片",
+    video: "视频",
+    audio: "音频",
+    file: "文件",
+  };
   return (
     <SelectItem value={value}>
       <div className="flex items-center gap-5">
         <span className="w-10">
-          {value.charAt(0).toUpperCase() + value.slice(1)}
+          {typeNames[value] || value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
         {isLoading ? (
           <Ellipsis className="h-4 w-4 animate-pulse" />
@@ -76,13 +83,13 @@ export default function FileTypeFilter({
 
   return (
     <div className="space-y-2">
-      <Label>Type</Label>
+      <Label>类型</Label>
       <Select value={localType} onValueChange={handleTypeChange}>
         <SelectTrigger>
-          <SelectValue placeholder="File type" />
+          <SelectValue placeholder="文件类型" />
         </SelectTrigger>
         <SelectContent>
-          {offline && <SelectItem value="all">All Files</SelectItem>}
+          {offline && <SelectItem value="all">所有文件</SelectItem>}
           <FileTypeSelectItem
             value="media"
             counts={counts}

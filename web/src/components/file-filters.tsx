@@ -66,10 +66,10 @@ const SearchFilter = ({
 
   return (
     <div className="space-y-2">
-      <Label>Keyword</Label>
+      <Label>关键词</Label>
       <div className="relative">
         <Input
-          placeholder="Search with name or caption"
+          placeholder="按名称或描述搜索"
           value={localSearch}
           onChange={(e) => handleChange(e.target.value)}
         />
@@ -98,7 +98,7 @@ const TagsFilter = ({ tags, onChange }: TagsFilterProps) => {
 
   return (
     <div className="space-y-2">
-      <Label>Tags</Label>
+      <Label>标签</Label>
       <TagsSelector
         value={tags}
         onChangeAction={onChange}
@@ -147,16 +147,16 @@ const DateFilter = ({ dateType, dateRange, onChange }: DateFilterProps) => {
   };
 
   const getDisplayText = () => {
-    if (!dateRange?.[0] && !dateRange?.[1]) return "Select date range";
+    if (!dateRange?.[0] && !dateRange?.[1]) return "选择日期范围";
     if (dateRange[0] && dateRange[1]) {
       return `${format(new Date(dateRange[0]), "LLL dd, y")} - ${format(new Date(dateRange[1]), "LLL dd, y")}`;
     }
-    return "Date range selected";
+    return "已选择日期范围";
   };
 
   return (
     <div className="space-y-2">
-      <Label>Date Filter</Label>
+      <Label>日期筛选</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -166,7 +166,7 @@ const DateFilter = ({ dateType, dateRange, onChange }: DateFilterProps) => {
             <CalendarRange className="mr-2 h-4 w-4" />
             <span className="flex-1">{getDisplayText()}</span>
             <span className="ml-2 rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
-              {localType === "downloaded" ? "Download" : "Sent"}
+              {localType === "downloaded" ? "下载" : "发送"}
             </span>
           </Button>
         </PopoverTrigger>
@@ -183,7 +183,7 @@ const DateFilter = ({ dateType, dateRange, onChange }: DateFilterProps) => {
                 onClick={() => handleTypeChange("sent")}
                 className="flex-1"
               >
-                Sent Date
+                发送日期
               </Button>
               <Button
                 size="sm"
@@ -191,7 +191,7 @@ const DateFilter = ({ dateType, dateRange, onChange }: DateFilterProps) => {
                 onClick={() => handleTypeChange("downloaded")}
                 className="flex-1"
               >
-                Downloaded
+                下载日期
               </Button>
             </div>
             <div className="rounded-md border p-2">
@@ -242,7 +242,7 @@ const SizeFilter = ({ sizeRange, sizeUnit, onChange }: SizeFilterProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label>File Size Range</Label>
+        <Label>文件大小范围</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm">
@@ -315,15 +315,15 @@ const SortFilter = ({ sort, order, onChange }: SortFilterProps) => {
   const currentOrder = order ?? "desc";
 
   const sortOptions = [
-    { value: "date", label: "Sent Date" },
-    { value: "completion_date", label: "Downloaded Date" },
-    { value: "size", label: "File Size" },
-    { value: "reaction_count", label: "Reaction Count" },
+    { value: "date", label: "发送日期" },
+    { value: "completion_date", label: "下载日期" },
+    { value: "size", label: "文件大小" },
+    { value: "reaction_count", label: "反应数" },
   ] as const;
 
   return (
     <div className="space-y-2">
-      <Label>Sort By</Label>
+      <Label>排序方式</Label>
       <div className="flex gap-2">
         <Select
           value={currentSort}
@@ -459,7 +459,7 @@ export default function FileFilters({
           className={cn("relative gap-2", isMobile && "z-50 w-9")}
         >
           <Filter className="h-5 w-5" />
-          {!isMobile && "Filters"}
+          {!isMobile && "筛选"}
           {filterCount > 0 && (
             <span className="absolute left-0 top-0 -ml-1 -mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white">
               {filterCount}
@@ -489,7 +489,7 @@ export default function FileFilters({
               <DrawerTitle>
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-                    Filters
+                    筛选
                   </span>
                   {!noAccountSpecified && (
                     <div className="flex items-center space-x-2">
@@ -497,7 +497,7 @@ export default function FileFilters({
                         htmlFor="offline"
                         className="cursor-pointer text-zinc-500"
                       >
-                        Offline
+                        离线
                       </Label>
                       <Switch
                         id="offline"
@@ -514,8 +514,7 @@ export default function FileFilters({
                 </div>
               </DrawerTitle>
               <DrawerDescription className="mb-3">
-                Default search by Telegram Client, you can choose offline to
-                search by local database.
+                默认通过 Telegram 客户端搜索，您可以选择离线模式通过本地数据库搜索。
               </DrawerDescription>
 
               <div className="space-y-4 overflow-y-auto p-0.5">
@@ -534,7 +533,7 @@ export default function FileFilters({
 
                 {!localFilters.offline && (
                   <div className="flex items-center justify-between rounded-md border bg-gray-100/50 px-2 py-3 dark:bg-gray-600/50">
-                    <Label htmlFor="notDownload">Filter Not Download</Label>
+                    <Label htmlFor="notDownload">筛选未下载</Label>
                     <Switch
                       id="notDownload"
                       checked={localFilters.downloadStatus === "idle"}
@@ -544,7 +543,7 @@ export default function FileFilters({
                           downloadStatus: checked ? "idle" : undefined,
                         }));
                       }}
-                      aria-label="Not Download"
+                      aria-label="未下载"
                     />
                   </div>
                 )}
@@ -585,9 +584,9 @@ export default function FileFilters({
             </div>
 
             <DrawerFooter className="fixed bottom-0 left-0 right-0 bg-background">
-              <Button onClick={handleApply}>Apply Filters</Button>
+              <Button onClick={handleApply}>应用筛选</Button>
               <Button variant="outline" onClick={handleClear}>
-                Clear Filters
+                清除筛选
               </Button>
             </DrawerFooter>
           </div>

@@ -69,7 +69,7 @@ class TransferTest {
         // Verify status updates and file moved
         verify(mockStatusUpdater, times(2)).accept(any());
 
-        // Check final destination
+        // Check final destination - our new implementation uses chatName (fallback to chatId when not available)
         Path expectedDestination = Path.of(transfer.destination).resolve("456").resolve("789").resolve(fileName);
         assertTrue(Files.exists(expectedDestination));
         assertFalse(Files.exists(Paths.get(sourcePath)));

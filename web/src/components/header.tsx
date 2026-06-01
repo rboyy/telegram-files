@@ -59,32 +59,32 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             {accountDownloadSpeed !== 0 && (
-              <TooltipWrapper content="当前账户下载速度">
-                <div className="flex items-center gap-2 overflow-hidden text-sm text-muted-foreground">
-                  <span className="flex-1 text-nowrap">
-                    {`${prettyBytes(accountDownloadSpeed, { bits: settings?.speedUnits === 'bits' })}/s`}
-                  </span>
-                  <Download className="h-4 w-4 flex-shrink-0" />
-                </div>
-              </TooltipWrapper>
-            )}
+        <TooltipWrapper content="当前账户下载速度">
+          <div className="flex items-center gap-2 overflow-hidden text-sm text-muted-foreground">
+            <span className="flex-1 text-nowrap">
+              {`${prettyBytes(accountDownloadSpeed, { bits: settings?.speedUnits === 'bits' })}/s`}
+            </span>
+            <Download className="h-4 w-4 flex-shrink-0" />
+          </div>
+        </TooltipWrapper>
+      )}
 
-            {connectionStatus && (
-              <TooltipWrapper content="WebSocket 连接状态">
-                <Badge
-                  variant={
-                    connectionStatus === "Open" ? "default" : "secondary"
-                  }
-                >
-                  {connectionStatus === "Open" ? (
-                    <ChevronsLeftRightEllipsisIcon className="mr-1 h-4 w-4" />
-                  ) : (
-                    <UnplugIcon className="mr-1 h-4 w-4" />
-                  )}
-                  {connectionStatus}
-                </Badge>
-              </TooltipWrapper>
+      {connectionStatus && (
+        <TooltipWrapper content="WebSocket 连接状态">
+          <Badge
+            variant={
+              connectionStatus === "Open" ? "default" : "secondary"
+            }
+          >
+            {connectionStatus === "Open" ? (
+              <ChevronsLeftRightEllipsisIcon className="mr-1 h-4 w-4" />
+            ) : (
+              <UnplugIcon className="mr-1 h-4 w-4" />
             )}
+            {connectionStatus === "Open" ? "已连接" : "已断开"}
+          </Badge>
+        </TooltipWrapper>
+      )}
 
             <ThemeToggleButton />
 
