@@ -6,42 +6,75 @@
 	<em><code>A self-hosted Telegram file downloader for continuous, stable, and unattended downloads.</code></em>
 </p>
 <p align="center">
+    🚀 <strong>中文界面支持</strong> | 🔧 <strong>优化分组功能</strong> | 🐳 <strong>多平台镜像</strong>
+</p>
+<p align="center">
 	<img src="https://img.shields.io/github/license/jarvis2f/telegram-files?style=default&logo=opensourceinitiative&logoColor=white&color=0080ff" alt="license">
 	<img src="https://img.shields.io/github/last-commit/jarvis2f/telegram-files?style=default&logo=git&logoColor=white&color=0080ff" alt="last-commit">
 	<img src="https://img.shields.io/github/v/release/jarvis2f/telegram-files?style=default&logo=git&logoColor=white&color=0080ff" alt="release">
-    <a href="https://codecov.io/gh/jarvis2f/telegram-files" > 
-        <img src="https://codecov.io/gh/jarvis2f/telegram-files/graph/badge.svg?token=Y4YN2W8ARV"/> 
+    <a href="https://codecov.io/gh/jarvis2f/telegram-files" >
+        <img src="https://codecov.io/gh/jarvis2f/telegram-files/graph/badge.svg?token=Y4YN2W8ARV"/>
     </a>
 </p>
 <br>
 
-## 🔗 Table of Contents
+## ✨ 优化版本特性
 
-- [📍 Overview](#-overview)
-- [🧩 Screenshots](#-screenshots)
-- [🚀 Getting Started](#-getting-started)
-- [⌨️ Development](#️-development)
-    - [☑️ Prerequisites](#-prerequisites)
-    - [⚙️ Installation](#-installation)
-- [📌 Project Roadmap](#-project-roadmap)
-- [🔰 Contributing](#-contributing)
-- [🎗 License](#-license)
-- [🆗 FAQs](#-faqs)
+本版本基于原版 telegram-files 进行以下优化：
+
+### 🇨🇳 中文界面支持
+- ✅ 完整的简体中文界面翻译
+- ✅ 所有按钮、提示信息、错误消息均已汉化
+- ✅ 更好的中文用户体验
+
+### 📁 优化的文件分组功能
+- ✅ **GROUP_BY_CHAT 策略优化**：使用频道/群组名称代替数字 ID
+- ✅ 更直观的文件夹结构
+- ✅ 文件管理更清晰
+
+### 🐳 多平台 Docker 镜像
+- ✅ 支持 `linux/amd64` (x86_64)
+- ✅ 支持 `linux/arm64` (ARM64)
+- ✅ 适用于各种服务器环境
+
+### 🔧 改进的文件路径处理
+- ✅ 自动清理文件名中的非法字符
+- ✅ 避免特殊符号导致的文件创建失败
+- ✅ 更好的跨平台兼容性
 
 ---
 
-## 📍 Overview
+## 🔗 目录
 
-* Seamless file downloads from Telegram channels and groups
-* Support for multiple Telegram accounts to manage and download files simultaneously
-* Pause and resume downloads anytime, with automatic file transfer to designated destinations
-* Instant preview of downloaded videos and images
-* Fully responsive design with mobile-friendly access, Progressive Web App (PWA) support, and offline capabilities
-* Easily fetch files from Telegram shared links
+- [📍 简介](#-简介)
+- [🧩 截图](#-截图)
+- [🚀 快速开始](#-快速开始)
+- [⌨️ 开发](#️-开发)
+    - [☑️ 环境要求](#-环境要求)
+    - [⚙️ 安装](#-安装)
+- [📌 项目路线图](#-项目路线图)
+- [🔰 贡献](#-贡献)
+- [🎗 许可证](#-许可证)
+- [🆗 常见问题](#-常见问题)
 
 ---
 
-## 🧩 Screenshots
+## 📍 简介
+
+Telegram Files 是一个自托管的 Telegram 文件下载器，支持：
+
+- ✅ 从 Telegram 频道和群组无缝下载文件
+- ✅ 支持多个 Telegram 账户同时管理和下载文件
+- ✅ 随时暂停和恢复下载，自动转移文件到指定目录
+- ✅ 即时预览下载的视频和图片
+- ✅ 完全响应式设计，支持移动端访问、PWA 和离线功能
+- ✅ 轻松从 Telegram 分享链接获取文件
+- ✅ **中文界面** - 原生简体中文支持
+- ✅ **优化的文件分组** - 使用名称而非 ID
+
+---
+
+## 🧩 截图
 
 <div align="center">
     <img src="./misc/preview-files-pc.gif" width="70%">
@@ -49,7 +82,7 @@
 </div>
 
 <details closed>
-<summary>More Screenshots</summary>
+<summary>更多截图</summary>
 <div align="center">
     <img src="./misc/screenshot-3.png" align="center" style="width: 300px; height: 500px;">
     <img src="./misc/screenshot-4.png" align="center" style="width: 300px; height: 500px;">
@@ -61,13 +94,11 @@
 </div>
 </details>
 
-## 🚀 Getting Started
+## 🚀 快速开始
 
-Before getting started with telegram-files, you should apply a telegram api id and hash. You can apply for it on
-the [Telegram API](https://my.telegram.org/apps) page.
+在使用 telegram-files 之前，你需要申请 Telegram API ID 和 Hash。请访问 [Telegram API](https://my.telegram.org/apps) 页面申请。
 
-**Using `docker`**
-&nbsp; [<img align="center" src="https://img.shields.io/badge/Docker-2CA5E0.svg?style={badge_style}&logo=docker&logoColor=white" />](https://www.docker.com/)
+**使用 Docker**
 
 ```shell
 docker run -d \
@@ -79,157 +110,150 @@ docker run -d \
   -e TELEGRAM_API_HASH=${TELEGRAM_API_HASH} \
   -p 6543:80 \
   -v ./data:/app/data \
-  ghcr.io/jarvis2f/telegram-files:latest
+  rboyy/telegram-files:latest  # 使用优化版本
 ```
 
-**Using `docker-compose`**
+**使用 docker-compose**
 
-Copy [docker-compose.yaml](docker-compose.yaml) and [.env.example](.env.example) to your project directory and run the following command:
+复制 [docker-compose.yaml](docker-compose.yaml) 和 [.env.example](.env.example) 到你的项目目录，运行：
 
 ```sh
 docker-compose up -d
 ```
 
-**Install on unRaid**
+**在 unRaid 上安装**
 
-On unRaid, install from the Community Repositories by searching for `telegram-files`.
+在 unRaid 上，可以通过社区仓库搜索 `telegram-files` 进行安装。
 
-> **Important Note:** You should NOT expose the service to the public internet. Because the service is not secure.
+> **重要提示**：请不要将服务暴露到公共互联网。因为该服务不是为公共访问设计的。
 
 ---
 
-## ⌨️ Development
+## ⌨️ 开发
 
-### ☑️ Prerequisites
+### ☑️ 环境要求
 
-Before getting started with telegram-files, ensure your runtime environment meets the following requirements:
+在开始使用 telegram-files 之前，请确保你的运行环境满足以下要求：
 
-- **Programming Language:** JDK23,TypeScript
-- **Package Manager:** Gradle,Npm
-- **Container Runtime:** Docker
+- **编程语言：** JDK23, TypeScript
+- **包管理器：** Gradle, Npm
+- **容器运行时：** Docker
 
-### ⚙️ Installation
+### ⚙️ 安装
 
-Install telegram-files using one of the following methods:
+使用以下方法之一安装 telegram-files：
 
-**Build from source:**
+**从源码构建：**
 
-1. Clone the telegram-files repository:
+1. 克隆 telegram-files 仓库：
 
 ```sh
-git clone https://github.com/jarvis2f/telegram-files
+git clone https://github.com/rboyy/telegram-files
 ```
 
-2. Navigate to the project directory:
+2. 进入项目目录：
 
 ```sh
 cd telegram-files
 ```
 
-3. Install the project dependencies:
+3. 安装项目依赖：
 
-**Using `npm`**
-&nbsp; [<img align="center" src="https://img.shields.io/badge/npm-CB3837.svg?style={badge_style}&logo=npm&logoColor=white" />](https://www.npmjs.com/)
+**使用 npm**
 
 ```sh
 cd web
 npm install
 ```
 
-**Using `gradle`**
-&nbsp; [<img align="center" src="https://img.shields.io/badge/Gradle-02303A.svg?style={badge_style}&logo=gradle&logoColor=white" />](https://gradle.org/)
+**使用 gradle**
 
 ```sh
 cd api
 gradle build
 ```
 
-**Using `docker`**
-&nbsp; [<img align="center" src="https://img.shields.io/badge/Docker-2CA5E0.svg?style={badge_style}&logo=docker&logoColor=white" />](https://www.docker.com/)
+**使用 docker**
 
 ```sh
-docker build -t jarvis2f/telegram-files .
+docker build -t rboyy/telegram-files .
 ```
 
-## 📌 Project Roadmap
+## 📌 项目路线图
 
-- ✅ **`Task 1`**: Automatically download files based on set rules.
-- ✅ **`Task 2`**: Download statistics and reports.
-- ✅ **`Task 3`**: Improve Telegram’s login functionality.
-- ✅ **`Task 4`**: Support auto transfer files to other destinations.
-- ✅ **`Task 5`**: File table is optimized using virtual lists.
-- ✅ **`Task 6`**: Preload file information to support responsible searches.
+- ✅ **`任务 1`**：根据设置规则自动下载文件
+- ✅ **`任务 2`**：下载统计和报告
+- ✅ **`任务 3`**：改进 Telegram 登录功能
+- ✅ **`任务 4`**：支持自动转移文件到其他目录
+- ✅ **`任务 5`**：使用虚拟列表优化文件表格
+- ✅ **`任务 6`**：预加载文件信息以支持搜索
+- ✅ **`任务 7`**：中文界面支持
+- ✅ **`任务 8`**：优化的文件分组策略
 
 ---
 
-## 🔰 Contributing
+## 🔰 贡献
 
-- **💬 [Join the Discussions](https://github.com/jarvis2f/telegram-files/discussions)**: Share your insights, provide
-  feedback, or ask questions.
-- **🐛 [Report Issues](https://github.com/jarvis2f/telegram-files/issues)**: Submit bugs found or log feature requests
-  for the `telegram-files` project.
-- **💡 [Submit Pull Requests](https://github.com/jarvis2f/telegram-files/blob/main/CONTRIBUTING.md)**: Review open PRs,
-  and submit your own PRs.
+- **💬 [参与讨论](https://github.com/rboyy/telegram-files/discussions)**：分享你的见解，提供反馈或提出问题
+- **🐛 [报告问题](https://github.com/rboyy/telegram-files/issues)**：提交发现的错误或为 `telegram-files` 项目记录功能请求
+- **💡 [提交 Pull Request](https://github.com/rboyy/telegram-files/blob/main/CONTRIBUTING.md)**：查看开放的 PR，提交你自己的 PR
 
 <details closed>
-<summary>Contributing Guidelines</summary>
+<summary>贡献指南</summary>
 
-1. **Fork the Repository**: Start by forking the project repository to your github account.
-2. **Clone Locally**: Clone the forked repository to your local machine using a git client.
+1. **Fork 仓库**：首先将项目仓库 Fork 到你的 GitHub 账户
+2. **克隆到本地**：使用 git 客户端将 Fork 的仓库克隆到你的本地机器
    ```sh
-   git clone https://github.com/jarvis2f/telegram-files
+   git clone https://github.com/rboyy/telegram-files
    ```
-3. **Create a New Branch**: Always work on a new branch, giving it a descriptive name.
+3. **创建新分支**：始终在新分支上工作，给它一个有描述性的名称
    ```sh
    git checkout -b new-feature-x
    ```
-4. **Make Your Changes**: Develop and test your changes locally.
-5. **Commit Your Changes**: Commit with a clear message describing your updates.
+4. **进行你的更改**：在本地开发和测试你的更改
+5. **提交你的更改**：用描述你更新的清晰消息提交
    ```sh
-   git commit -m 'Implemented new feature x.'
+   git commit -m '实现了新功能 x'
    ```
-6. **Push to github**: Push the changes to your forked repository.
+6. **推送到 GitHub**：将更改推送到你的 Fork 仓库
    ```sh
    git push origin new-feature-x
    ```
-7. **Submit a Pull Request**: Create a PR against the original project repository. Clearly describe the changes and
-   their motivations.
-8. **Review**: Once your PR is reviewed and approved, it will be merged into the main branch. Congratulations on your
-   contribution!
+7. **提交 Pull Request**：创建一个针对原始项目仓库的 PR。清楚地描述更改及其动机
+8. **审核**：一旦你的 PR 被审核并批准，它将被合并到主分支。恭喜你的贡献！
 
 </details>
 
 ---
 
-## 🎗 License
+## 🎗 许可证
 
-This project is protected under the MIT License. For more details,
-refer to the [LICENSE](LICENSE) file.
+本项目受 MIT 许可证保护。更多详情请参阅 [LICENSE](LICENSE) 文件。
 
 ---
 
-## 🆗 FAQs
+## 🆗 常见问题
 
-~~**Q.** Can't start the api server, error：`java.lang.UnsatisfiedLinkError: no tdjni in java.library.path`~~
+~~**问**：无法启动 API 服务器，错误：`java.lang.UnsatisfiedLinkError: no tdjni in java.library.path`~~
 
-~~**A.** Maybe download tdlib failed, you can see the [entrypoint.sh](entrypoint.sh) file, then download tdlib
-manually.~~
+~~**答**：可能是下载 tdlib 失败，你可以查看 [entrypoint.sh](entrypoint.sh) 文件，然后手动下载 tdlib。~~
 
-**Q.** Web's spoiler is static, how to solve it?
+**问**：网页的 spoiler 是静态的，如何解决？
 
-**A.** 1. Because `CSS Houdini Paint API` is not supported by all browsers. 2. It is only supported on https.
+**答**：1. 因为 CSS Houdini Paint API 不是所有浏览器都支持。2. 它仅在 https 上支持。
+
 <details closed>
-<summary>Use in http environment, you can use the following method to solve it</summary>
+<summary>在 http 环境中使用，可以使用以下方法解决</summary>
 
-Open the `chrome://flags` page, search for `Insecure origins treated as secure`, and add the address of the web page to
-the list.
+打开 `chrome://flags` 页面，搜索"将不安全来源视为安全"，并将网页地址添加到列表中。
 </details>
 
-**Q.** How to use the telegram-files maintenance tool?
+**问**：如何使用 telegram-files 维护工具？
 
-**A.** You can use the following command to run the maintenance tool(**before running the command, you should stop telegram-files container**):
+**答**：你可以使用以下命令运行维护工具（**在运行命令之前，你应该停止 telegram-files 容器**）：
+
 <details closed>
-<summary>Command</summary>
+<summary>命令</summary>
 
 ```shell
 docker run --rm \
@@ -238,11 +262,48 @@ docker run --rm \
   -e APP_ROOT=${APP_ROOT:-/app/data} \
   -e TELEGRAM_API_ID=${TELEGRAM_API_ID} \
   -e TELEGRAM_API_HASH=${TELEGRAM_API_HASH} \
-  ghcr.io/jarvis2f/telegram-files:latest ${Maintenance Command}
+  rboyy/telegram-files:latest ${维护命令}
 ```
 
-**Maintenance Command:**
+**维护命令：**
 
-- `album-caption`: Fixed issue with missing caption for album messages before `0.1.15`.
-- `thumbnail`: Fixed issue with missing clear thumbnail.
+- `album-caption`：修复 0.1.15 之前相册消息缺少标题的问题
+- `thumbnail`：修复缺少清晰缩略图的问题
 </details>
+
+---
+
+## 🐳 Docker 镜像
+
+我们提供优化的多平台 Docker 镜像：
+
+```bash
+# 从 Docker Hub 拉取
+docker pull rboyy/telegram-files:latest
+
+# 或者使用 docker-compose
+services:
+  telegram-files:
+    image: rboyy/telegram-files:latest
+    # ... 其他配置
+```
+
+**支持的平台：**
+- ✅ linux/amd64 (x86_64)
+- ✅ linux/arm64 (ARM64)
+
+---
+
+<div align="center">
+  <p>
+    <strong>Made with ❤️ by <a href="https://github.com/rboyy">RBoy</a></strong>
+  </p>
+  <p>
+    <a href="https://github.com/rboyy/telegram-files/stargazers">
+      <img src="https://img.shields.io/github/stars/rboyy/telegram-files?style=social" alt="Stars">
+    </a>
+    <a href="https://github.com/rboyy/telegram-files/network/members">
+      <img src="https://img.shields.io/github/forks/rboyy/telegram-files?style=social" alt="Forks">
+    </a>
+  </p>
+</div>
