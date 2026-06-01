@@ -6,7 +6,7 @@
   <strong>自托管的 Telegram 文件下载器</strong>
 </p>
 <p align="center">
-  🇨🇳 中文界面 | 📁 优化分组 | 🐳 多平台镜像
+  🇨🇳 中文界面 | 📁 优化分组 | 🐳 多平台镜像 | ⚡ GitHub Actions CI
 </p>
 <p align="center">
   <a href="https://github.com/rboyy/telegram-files/blob/main/LICENSE">
