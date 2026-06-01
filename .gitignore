@@ -1,0 +1,30 @@
+.idea/
+**/*.iml
+*.iws
+
+out/
+*/.gradle
+**/*build*/
+
+/app/
+/app-test/
+
+**/*.log
+api.log.lck
+**/.env.*
+!**/.env.example
+
+http-client.private.env.json
+
+docker-compose-*.yaml
+docker-compose-*.yml
+
+# Large files - Docker images
+*.tar
+*.tar.gz
+
+# macOS
+.DS_Store
+
+# Data
+data/

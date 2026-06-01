@@ -1,0 +1,58 @@
+services:
+  telegram-files:
+    container_name: telegram-files-local
+    image: rboy/telegram-files:1.0
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1/api/health" ]
+      interval: 10s
+      retries: 3
+      timeout: 10s
+      start_period: 10s
+    env_file:
+      - .env
+    environment:
+      APP_ENV: "prod"
+      APP_ROOT: "/app/data"
+    ports:
+      - "6543:80"
+    volumes:
+      - ./data:/app/data
+
+# Uncomment the following lines to enable database services.
+#  telegram-files-postgres:
+#    container_name: telegram-files-postgres
+#    image: postgres:15-alpine
+#    restart: always
+#    environment:
+#      PGUSER: ${DB_USER:-postgres}
+#      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+#      POSTGRES_DB: ${DB_NAME:-telegram-files}
+#      PGDATA: /var/lib/postgresql/data/pgdata
+#    volumes:
+#      - ./data/db/data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: [ 'CMD', 'pg_isready' ]
+#      interval: 1s
+#      timeout: 3s
+#      retries: 30
+#
+#  telegram-files-mysql:
+#    container_name: telegram-files-mysql
+#    image: mysql:8
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+#      MYSQL_DATABASE: ${DB_NAME:-telegram-files}
+#      MYSQL_USER: ${DB_USER:-mysql}
+#      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+#    command:
+#      --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+#    volumes:
+#      - ./data/db/data:/var/lib/mysql
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$MYSQL_ROOT_PASSWORD" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 30s
