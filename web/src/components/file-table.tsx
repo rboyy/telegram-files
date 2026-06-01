@@ -25,38 +25,38 @@ import FileBatchControl from "@/components/file-batch-control";
 const COLUMNS: Column[] = [
   {
     id: "content",
-    label: "Content",
+    label: "内容",
     isVisible: true,
     className: "text-center",
   },
-  { id: "type", label: "Type", isVisible: true, className: "w-16 text-center" },
+  { id: "type", label: "类型", isVisible: true, className: "w-16 text-center" },
   {
     id: "size",
-    label: "Size",
+    label: "大小",
     isVisible: true,
     className: "w-20 text-center",
   },
   {
     id: "status",
-    label: "Status",
+    label: "状态",
     isVisible: true,
     className: "w-32 text-center",
   },
   {
     id: "tags",
-    label: "Tags",
+    label: "标签",
     isVisible: true,
     className: "w-32",
   },
   {
     id: "extra",
-    label: "Extra",
+    label: "附加信息",
     isVisible: true,
     className: "flex-1 max-w-44 overflow-hidden lg:max-w-none",
   },
   {
     id: "actions",
-    label: "Actions",
+    label: "操作",
     isVisible: true,
     className: "text-center w-40 min-w-40",
   },
@@ -198,7 +198,7 @@ export function FileTable({
               }}
             >
               <SquareChevronLeft className="h-4 w-4" />
-              Back
+              返回
             </Button>
           )}
           {link ? (

@@ -194,6 +194,7 @@ public class TransferVerticle extends AbstractVerticle {
 
         return transfers.computeIfAbsent(automation.uniqueKey(), _ -> {
             Transfer transfer = Transfer.create(transferRule);
+            transfer.setTelegramId(automation.telegramId);
             transfer.transferStatusUpdated = updated ->
                     updateTransferStatus(updated.fileRecord(), updated.transferStatus(), updated.localPath());
             return transfer;

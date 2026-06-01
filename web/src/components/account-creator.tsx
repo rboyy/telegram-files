@@ -101,7 +101,7 @@ export default function AccountCreator({
         case TelegramConstructor.STATE_READY:
           toast({
             variant: "success",
-            description: "Account added successfully",
+            description: "账户添加成功",
           });
           setTimeout(() => {
             void mutate("/telegrams");
@@ -156,7 +156,7 @@ export default function AccountCreator({
   if (debounceIsCreateMutating) {
     return (
       <div className="flex items-center justify-center space-x-2 text-xl">
-        <span>Initializing account, please wait</span>
+        <span>正在初始化账户，请稍候</span>
         <Ellipsis className="h-4 w-4 animate-pulse" />
       </div>
     );
@@ -166,7 +166,7 @@ export default function AccountCreator({
     return (
       <div className="text-center text-xl">
         <span className="mr-3 text-3xl">😲</span>
-        Initializing account failed, please try again later.
+        初始化账户失败，请稍后重试。
       </div>
     );
   }
@@ -189,7 +189,7 @@ export default function AccountCreator({
             });
           }}
         >
-          Start Initialization
+          开始初始化
         </Button>
       </div>
     );
@@ -198,8 +198,8 @@ export default function AccountCreator({
   if (!authState && !isMethodExecuting) {
     return (
       <div className="flex flex-col items-center justify-center space-y-2 rounded bg-gray-50 p-2">
-        <p>Waiting for the telegram account to be initialized, please wait.</p>
-        <p>If it takes too long, please refresh the page or try again later.</p>
+        <p>正在等待 Telegram 账户初始化，请稍候。</p>
+        <p>如果等待时间过长，请刷新页面或稍后重试。</p>
         <Ellipsis className="h-4 w-4 animate-pulse" />
       </div>
     );
@@ -208,9 +208,9 @@ export default function AccountCreator({
   const authStateFormFields = {
     [TelegramConstructor.WAIT_PHONE_NUMBER]: (
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
+        <Label htmlFor="phone">电话号码</Label>
         <p className="text-xs text-gray-500">
-          Should with country code like: 8613712345678
+          必须包含国家代码，例如：8613712345678
         </p>
         <Input
           id="phone"
@@ -226,9 +226,9 @@ export default function AccountCreator({
     ),
     [TelegramConstructor.WAIT_CODE]: (
       <div className="space-y-2">
-        <Label htmlFor="code">Authentication Code</Label>
+        <Label htmlFor="code">验证码</Label>
         <p className="text-xs text-gray-500">
-          Please enter the code sent to your telegram account.
+          请输入发送到您的 Telegram 账户的验证码。
         </p>
         <InputOTP
           id="code"
@@ -251,9 +251,9 @@ export default function AccountCreator({
     ),
     [TelegramConstructor.WAIT_PASSWORD]: (
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">密码</Label>
         <p className="text-xs text-gray-500">
-          You have enabled two-step verification, please enter your password.
+          您已启用两步验证，请输入您的密码。
         </p>
         <Input
           id="password"
@@ -317,7 +317,7 @@ export default function AccountCreator({
               {isDeMethodExecuting ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
               ) : (
-                "🚀 Submit"
+                "🚀 提交"
               )}
             </Button>
           )}
@@ -331,7 +331,7 @@ export default function AccountCreator({
               {isDeMethodExecuting ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
               ) : (
-                "LOG IN BY QR CODE"
+                "通过二维码登录"
               )}
             </Button>
           )}
@@ -408,7 +408,7 @@ function QRCode({ link }: { link?: string }) {
       </div>
       <div className="rounded-lg bg-white bg-opacity-80 p-1 dark:bg-gray-800">
         <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-          Scan the QR code with your telegram app to log in.
+          使用您的 Telegram 应用扫描二维码登录。
         </p>
       </div>
     </div>

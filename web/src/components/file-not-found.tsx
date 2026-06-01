@@ -24,11 +24,11 @@ export default function FileNotFount() {
       <SolidFileIcon className="h-10 w-10 text-muted-foreground" />
       <div className="absolute bottom-1/3 left-1/2 z-0 -translate-x-1/2 transform-gpu text-center">
         <span className="pointer-events-none whitespace-pre-wrap bg-gradient-to-b from-black to-gray-300 bg-clip-text text-center text-xl font-semibold leading-none text-transparent dark:from-white dark:to-black">
-          No files found
+          未找到文件
         </span>
         <p className="pointer-events-none text-center text-xs text-muted-foreground">
-          Your search did not match any files. <br />
-          Try searching for something else.
+          您的搜索未匹配到任何文件。<br />
+          请尝试搜索其他内容。
         </p>
       </div>
 

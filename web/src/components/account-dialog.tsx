@@ -49,7 +49,7 @@ export function AccountDialog({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Add Telegram Account
+            添加 Telegram 账户
             {(account ?? newAccountId) && (
               <p className="rounded-md bg-gray-100 p-1 text-xs text-muted-foreground dark:bg-gray-800 dark:text-gray-300">
                 {account ? account.id : newAccountId}
@@ -74,8 +74,8 @@ export function AccountDialog({
                 toast({
                   variant: "success",
                   description: proxyName
-                    ? `Proxy is set to ${proxyName} with new account`
-                    : "Proxy is disabled",
+                    ? `代理已设置为 ${proxyName}，新账户已配置`
+                    : "代理已禁用",
                 });
               }}
               enableSelect={true}

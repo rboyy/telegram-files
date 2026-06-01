@@ -14,6 +14,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.StructuredChatCompletionCreateParams;
 import io.vertx.core.json.JsonObject;
+import org.drinkless.tdlib.TdApi;
 import telegram.files.repository.FileRecord;
 import telegram.files.repository.SettingAutoRecords;
 
@@ -40,6 +41,8 @@ public abstract class Transfer {
     public Consumer<TransferStatusUpdated> transferStatusUpdated;
 
     private FileRecord transferRecord;
+    
+    private long telegramId;
 
     public Transfer(SettingAutoRecords.TransferRule transferRule) {
         this.destination = transferRule.destination;
@@ -47,6 +50,14 @@ public abstract class Transfer {
         this.duplicationPolicy = transferRule.duplicationPolicy;
         this.transferHistory = transferRule.transferHistory;
         this.extra = transferRule.extra != null ? transferRule.extra : new JsonObject();
+    }
+
+    public void setTelegramId(long telegramId) {
+        this.telegramId = telegramId;
+    }
+    
+    public long getTelegramId() {
+        return telegramId;
     }
 
     public static Transfer create(SettingAutoRecords.TransferRule transferRule) {
@@ -152,11 +163,33 @@ public abstract class Transfer {
         @Override
         protected String getTransferPath(FileRecord fileRecord) {
             String name = FileUtil.getName(fileRecord.localPath());
+            String chatName = getChatName(fileRecord);
             return Path.of(destination,
-                    Convert.toStr(fileRecord.telegramId()),
-                    Convert.toStr(fileRecord.chatId()),
+                    chatName,
                     name
             ).toString();
+        }
+        
+        private String getChatName(FileRecord fileRecord) {
+            try {
+                TelegramVerticle telegramVerticle = TelegramVerticles.get(fileRecord.telegramId()).orElse(null);
+                if (telegramVerticle != null) {
+                    TdApi.Chat chat = telegramVerticle.getChat(fileRecord.chatId());
+                    if (chat != null && StrUtil.isNotBlank(chat.title)) {
+                        return sanitizeFileName(chat.title);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to get chat name for chatId: {}", fileRecord.chatId(), e);
+            }
+            return Convert.toStr(fileRecord.chatId());
+        }
+        
+        private String sanitizeFileName(String name) {
+            if (StrUtil.isBlank(name)) {
+                return "";
+            }
+            return name.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
         }
     }
 

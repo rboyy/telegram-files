@@ -44,8 +44,7 @@ export function EmptyState({
         <MessageSquare className="mb-4 h-16 w-16 text-muted-foreground" />
         <h2 className="mb-2 text-2xl font-semibold">{message}</h2>
         <p className="text-muted-foreground">
-          Choose a chat from the dropdown menu above to view and manage its
-          files.
+          从上方的下拉菜单中选择一个聊天，查看和管理其文件。
         </p>
       </div>
     );
@@ -60,11 +59,10 @@ export function EmptyState({
             {!isMobile && (
               <>
                 <h2 className="mb-2 text-2xl font-semibold">
-                  Select an Account
+                  选择一个账户
                 </h2>
                 <p className="mb-4 max-w-md text-muted-foreground">
-                  Choose a Telegram account to view and manage your files. You
-                  can add more accounts using the button below.
+                  选择一个 Telegram 账户来查看和管理您的文件。您可以使用下方按钮添加更多账户。
                 </p>
               </>
             )}
@@ -72,10 +70,9 @@ export function EmptyState({
         ) : (
           <>
             <TelegramIcon className="mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="mb-2 text-2xl font-semibold">No Accounts Found</h2>
+            <h2 className="mb-2 text-2xl font-semibold">未找到账户</h2>
             <p className="mb-4 max-w-md text-muted-foreground">
-              Add a Telegram account to start managing your files. You can add
-              multiple accounts and switch between them.
+              添加一个 Telegram 账户以开始管理您的文件。您可以添加多个账户并在它们之间切换。
             </p>
           </>
         )}
@@ -85,7 +82,7 @@ export function EmptyState({
               <BorderBeam size={60} duration={12} delay={9} />
               <Button variant="outline">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Account
+                添加账户
               </Button>
             </div>
           </AccountDialog>
@@ -126,7 +123,7 @@ function AllFiles() {
       <Card className="mx-auto mb-8 max-w-5xl">
         <CardContent className="flex items-center justify-center p-6 text-red-500">
           <AlertTriangle className="mr-2" />
-          Failed to load file counts
+          加载文件计数失败
         </CardContent>
       </Card>
     );
@@ -137,7 +134,7 @@ function AllFiles() {
       <Card className="mx-auto mb-8 max-w-5xl">
         <CardContent className="flex items-center justify-center p-6 text-gray-500">
           <Loader2 className="mr-2 animate-spin" />
-          Loading file counts...
+          正在加载文件计数...
         </CardContent>
       </Card>
     );
@@ -153,21 +150,21 @@ function AllFiles() {
           <div className="flex items-center justify-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
             <Check className="text-green-500" />
             <span className="hidden text-sm font-medium md:inline-block">
-              Downloaded
+              已下载
             </span>
             <span className="text-sm font-medium">{data.completed}</span>
           </div>
           <div className="flex items-center justify-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
             <Download className="text-blue-500" />
             <span className="hidden text-sm font-medium md:inline-block">
-              Downloading
+              下载中
             </span>
             <span className="text-sm font-medium">{data.downloading}</span>
           </div>
           <div className="flex items-center justify-center gap-3 rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
             <HardDrive className="text-purple-500" />
             <span className="hidden text-sm font-medium md:inline-block">
-              Size
+              大小
             </span>
             <span className="text-sm font-medium">
               {prettyBytes(data.downloadedSize)}
