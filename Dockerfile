@@ -37,7 +37,11 @@ ENV NEXT_PUBLIC_API_URL=/api \
     SKIP_ENV_VALIDATION=1
 
 COPY ./web/package*.json ./
-RUN npm ci --frozen-lockfile
+RUN npm config set fetch-retries 10 && \
+    npm config set fetch-retry-mintimeout 60000 && \
+    npm config set fetch-retry-maxtimeout 300000 && \
+    npm config set fetch-timeout 300000 && \
+    npm ci --frozen-lockfile
 
 COPY ./web .
 RUN npm run build
