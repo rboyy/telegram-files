@@ -31,7 +31,7 @@ export default function AccountDeleteDialog({
   const { trigger: triggerDelete, isMutating: isDeleteMutating } =
     useSWRMutation(`/telegram/${telegramId}/delete`, POST, {
       onSuccess: () => {
-        toast({ variant: "success", title: "Account deleted successfully!" });
+        toast({ variant: "success", title: "账户删除成功！" });
         resetAccount();
         // 延迟关闭对话框
         setTimeout(() => {
@@ -65,11 +65,10 @@ export default function AccountDeleteDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>Delete Telegram Account</DialogTitle>
+          <DialogTitle>删除 Telegram 账户</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to delete your account? This action is
-          irreversible.
+          您确定要删除您的账户吗？此操作不可逆。
         </DialogDescription>
         <div className="flex justify-end gap-2">
           <Button
@@ -77,14 +76,14 @@ export default function AccountDeleteDialog({
             onClick={() => triggerDelete()}
             disabled={debounceIsDeleteMutating}
           >
-            {debounceIsDeleteMutating ? "Deleting..." : "Delete"}
+            {debounceIsDeleteMutating ? "删除中..." : "删除"}
           </Button>
           <Button
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={debounceIsDeleteMutating}
           >
-            Cancel
+            取消
           </Button>
         </div>
       </DialogContent>

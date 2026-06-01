@@ -63,7 +63,7 @@ function SortableItem({
         {...listeners}
         variant="ghost"
         size="sm"
-        title="Drag and drop to reorder columns"
+        title="拖拽排序列"
         className="invisible ml-auto group-hover:visible"
       >
         <Menu className="h-3 w-3" />
@@ -116,7 +116,7 @@ export default function TableColumnFilter({
         className="select-none"
         asChild
       >
-        <Button variant="outline" title="Show/hide columns">
+        <Button variant="outline" title="显示/隐藏列">
           <Columns className="mr-2 h-4 w-4" />
           <span className="text-xs text-muted-foreground">{`(${columnConfig.length}/${columns.length})`}</span>
           <ChevronDown className="ml-2 h-4 w-4" />

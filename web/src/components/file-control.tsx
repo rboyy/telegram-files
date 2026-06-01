@@ -93,7 +93,7 @@ export default function FileControl({
 
   const removeBtnProps: ActionButtonProps = {
     onClick: () => remove(file.id),
-    tooltipText: "Remove",
+    tooltipText: "删除",
     icon: <FileX className={iconSize} />,
     loading: removing,
   };
@@ -117,7 +117,7 @@ export default function FileControl({
             if (!result) {
               toast({
                 variant: "error",
-                description: "Failed to get message thread",
+                description: "获取消息线程失败",
               });
               return;
             }
@@ -132,12 +132,12 @@ export default function FileControl({
           .catch(() => {
             toast({
               variant: "error",
-              description: "Failed to get message thread",
+              description: "获取消息线程失败",
             });
           });
       }
     },
-    tooltipText: "View Comments",
+    tooltipText: "查看评论",
     icon: <MessageSquareText className={iconSize} />,
     loading: isMethodExecuting,
   };
@@ -146,7 +146,7 @@ export default function FileControl({
     idle: [
       {
         onClick: () => start(file.id),
-        tooltipText: "Start Download",
+        tooltipText: "开始下载",
         icon: <ArrowDown className={iconSize} />,
         loading: starting,
       },
@@ -154,7 +154,7 @@ export default function FileControl({
     error: [
       {
         onClick: () => start(file.id),
-        tooltipText: "Retry",
+        tooltipText: "重试",
         icon: <ArrowDown className={iconSize} />,
         loading: starting,
       },
@@ -162,13 +162,13 @@ export default function FileControl({
     downloading: [
       {
         onClick: () => togglePause(file.id),
-        tooltipText: "Pause",
+        tooltipText: "暂停",
         icon: <Pause className={iconSize} />,
         loading: togglingPause,
       },
       {
         onClick: () => cancel(file.id),
-        tooltipText: "Cancel",
+        tooltipText: "取消",
         icon: <SquareX className={iconSize} />,
         loading: cancelling,
       },
@@ -176,13 +176,13 @@ export default function FileControl({
     paused: [
       {
         onClick: () => togglePause(file.id),
-        tooltipText: "Resume",
+        tooltipText: "继续",
         icon: <StepForward className={iconSize} />,
         loading: togglingPause,
       },
       {
         onClick: () => cancel(file.id),
-        tooltipText: "Cancel",
+        tooltipText: "取消",
         icon: <SquareX className={iconSize} />,
         loading: cancelling,
       },
@@ -196,7 +196,7 @@ export default function FileControl({
         className="flex w-full items-center justify-end space-x-4 md:justify-around md:space-x-2"
         onClick={(e) => e.preventDefault()}
       >
-        <TooltipWrapper content="Missing Original Message">
+        <TooltipWrapper content="原始消息缺失">
           <Badge className="bg-yellow-300 text-yellow-900 hover:bg-yellow-400 dark:bg-yellow-800 dark:text-yellow-300 dark:hover:bg-yellow-700">
             <Unlink className="h-4 w-4" />
           </Badge>
@@ -282,7 +282,7 @@ export function MobileFileControl({ file }: { file: TelegramFile }) {
           ) : (
             <ArrowDown className="h-4 w-4" />
           )}
-          <span className="ml-2">Download</span>
+          <span className="ml-2">下载</span>
         </Button>
       )}
       {(file.downloadStatus === "downloading" ||
@@ -297,7 +297,7 @@ export function MobileFileControl({ file }: { file: TelegramFile }) {
               <StepForward className="h-4 w-4" />
             )}
             <span className="ml-2">
-              {file.downloadStatus === "downloading" ? "Pause" : "Resume"}
+              {file.downloadStatus === "downloading" ? "暂停" : "继续"}
             </span>
           </Button>
           <Button
@@ -310,7 +310,7 @@ export function MobileFileControl({ file }: { file: TelegramFile }) {
             ) : (
               <SquareX className="h-4 w-4" />
             )}
-            <span className="ml-2">Cancel</span>
+            <span className="ml-2">取消</span>
           </Button>
         </>
       )}
@@ -325,7 +325,7 @@ export function MobileFileControl({ file }: { file: TelegramFile }) {
           ) : (
             <FileX className="h-4 w-4" />
           )}
-          <span className="ml-2">Remove</span>
+          <span className="ml-2">删除</span>
         </Button>
       )}
     </div>

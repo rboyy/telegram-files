@@ -6,21 +6,21 @@ import { Rows2, Rows3, Rows4 } from "lucide-react";
 const heightOptions = [
   {
     id: "s",
-    label: "Small",
+    label: "小",
     value: "h-12",
     px: 48,
     icon: <Rows4 className="h-4 w-4" />,
   },
   {
     id: "m",
-    label: "Medium",
+    label: "中",
     value: "h-24",
     px: 96,
     icon: <Rows3 className="h-4 w-4" />,
   },
   {
     id: "l",
-    label: "Large",
+    label: "大",
     value: "h-64",
     px: 256,
     icon: <Rows2 className="h-4 w-4" />,

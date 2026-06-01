@@ -41,18 +41,18 @@ export const SettingsDialog: React.FC = () => {
         aria-describedby={undefined}
       >
         <VisuallyHidden>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>设置</DialogTitle>
         </VisuallyHidden>
         <Tabs
           defaultValue="general"
           className="mt-3 flex h-full flex-col overflow-hidden"
         >
           <TabsList className="min-h-9 justify-start overflow-auto">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="statistics">Statistics</TabsTrigger>
-            <TabsTrigger value="proxys">Proxys</TabsTrigger>
+            <TabsTrigger value="general">通用</TabsTrigger>
+            <TabsTrigger value="statistics">统计</TabsTrigger>
+            <TabsTrigger value="proxys">代理</TabsTrigger>
             <TabsTrigger value="api">API</TabsTrigger>
-            <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="about">关于</TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="overflow-hidden">
             <SettingsForm />
@@ -85,7 +85,7 @@ export const SettingsDialog: React.FC = () => {
               ) : (
                 <div className="flex flex-1 items-center justify-center">
                   <p className="text-lg text-muted-foreground">
-                    Please select an account to view statistics
+                    请选择一个账户以查看统计数据
                   </p>
                 </div>
               )}

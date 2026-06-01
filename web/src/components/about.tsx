@@ -40,7 +40,7 @@ export default function About() {
     author: "Jarvis2f",
   };
 
-  const currentVersion = apiData?.version ?? "Unknown";
+  const currentVersion = apiData?.version ?? "未知";
   const isNewVersionAvailable =
     githubData && githubData.tag_name !== currentVersion;
 
@@ -48,10 +48,9 @@ export default function About() {
     <div className="flex justify-center md:h-full md:items-center">
       <Card className="w-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-[#7900ff] via-[#548cff] to-[#93ffd8] md:w-1/2">
         <CardHeader>
-          <CardTitle className="text-white">About This Project</CardTitle>
+          <CardTitle className="text-white">关于本项目</CardTitle>
           <CardDescription className="text-white">
-            A self-hosted Telegram file downloader for continuous, stable, and
-            unattended downloads.
+            一个自托管的 Telegram 文件下载器，支持连续、稳定和无人值守的下载。
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
@@ -62,20 +61,20 @@ export default function About() {
           />
           <div className="space-y-4">
             <div className="flex flex-col items-center justify-center">
-              <p className="text-sm font-medium text-white">Author</p>
+              <p className="text-sm font-medium text-white">作者</p>
               <p>{projectInfo.author}</p>
             </div>
 
             <div className="flex flex-col items-center justify-center">
               <p className="mb-1 text-sm font-medium text-white">
-                Current Version
+                当前版本
               </p>
               {apiError ? (
-                <p className="text-red-500">Failed to load current version</p>
+                <p className="text-red-500">加载当前版本失败</p>
               ) : !apiData ? (
                 <div className="flex items-center space-x-2">
                   <RefreshCw className="animate-spin text-white" size={16} />
-                  <span>Loading...</span>
+                  <span>加载中...</span>
                 </div>
               ) : (
                 <p className="rounded bg-gray-100 px-3 dark:bg-gray-800">
@@ -86,14 +85,14 @@ export default function About() {
 
             <div className="flex flex-col items-center justify-center">
               <p className="mb-1 text-sm font-medium text-white">
-                Latest Version
+                最新版本
               </p>
               {githubError ? (
-                <p className="text-red-500">Failed to load release data</p>
+                <p className="text-red-500">加载发布信息失败</p>
               ) : !githubData ? (
                 <div className="flex items-center space-x-2">
                   <RefreshCw className="animate-spin text-white" size={16} />
-                  <span>Loading...</span>
+                  <span>加载中...</span>
                 </div>
               ) : (
                 <p className="rounded bg-gray-100 px-3 dark:bg-gray-800">
@@ -105,8 +104,7 @@ export default function About() {
             {isNewVersionAvailable && (
               <div className="border-l-4 border-gray-700 bg-white px-4 py-2">
                 <p className="text-gray-800">
-                  A new version ({githubData?.tag_name}) is available! Update
-                  now.
+                  有新版本 ({githubData?.tag_name}) 可用！请立即更新。
                 </p>
               </div>
             )}
