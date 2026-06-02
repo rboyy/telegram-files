@@ -74,12 +74,9 @@ export default function FileTypeFilter({
     onChange(value);
   };
 
-  useEffect(() => {
-    if (!offline && localType === "all") {
-      setLocalType("media");
-      onChange("media");
-    }
-  }, [localType, offline, onChange]);
+  React.useEffect(() => {
+    setLocalType(type);
+  }, [type]);
 
   return (
     <div className="space-y-2">

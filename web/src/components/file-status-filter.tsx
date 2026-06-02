@@ -68,6 +68,11 @@ export default function FileStatusFilter({
     onChange(downloadStatus, transferStatus);
   };
 
+  React.useEffect(() => {
+    setLocalDownloadStatus(downloadStatus);
+    setLocalTransferStatus(transferStatus);
+  }, [downloadStatus, transferStatus]);
+
   const statusDisplayValue = useMemo(() => {
     if (!localDownloadStatus && !localTransferStatus) {
       return "筛选状态";
