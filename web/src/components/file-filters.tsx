@@ -382,8 +382,10 @@ export default function FileFilters({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
+    if (open) {
+      setLocalFilters(filters);
+    }
+  }, [filters, open]);
 
   const filterCount = Object.entries(filters).filter(([key, value]) => {
     if (["offline", "sort", "order", "dateType", "sizeUnit"].includes(key))
@@ -503,10 +505,12 @@ export default function FileFilters({
                         id="offline"
                         checked={localFilters.offline}
                         onCheckedChange={(checked) => {
-                          setLocalFilters((prev) => ({
-                            ...prev,
+                          const newFilters = {
+                            ...localFilters,
                             offline: checked,
-                          }));
+                          };
+                          setLocalFilters(newFilters);
+                          onFiltersChange(newFilters);
                         }}
                       />
                     </div>
@@ -527,7 +531,7 @@ export default function FileFilters({
                   offline={localFilters.offline}
                   telegramId={telegramId}
                   chatId={chatId}
-                  type={filters.type}
+                  type={localFilters.type}
                   onChange={handleTypeChange}
                 />
 
