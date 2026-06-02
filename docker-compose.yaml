@@ -1,7 +1,7 @@
 services:
   telegram-files:
     container_name: telegram-files-local
-    image: rboy/telegram-files:1.0
+    image: rboyy/telegram-files:latest
     restart: always
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://127.0.0.1/api/health" ]
