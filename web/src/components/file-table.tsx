@@ -143,7 +143,7 @@ export function FileTable({
       toast({
         title: "删除失败",
         description: error instanceof Error ? error.message : "删除文件时发生未知错误",
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setIsDeletingAll(false);
