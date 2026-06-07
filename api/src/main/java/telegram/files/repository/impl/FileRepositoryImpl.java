@@ -757,4 +757,32 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
                 .onFailure(err -> log.error("Failed to get completed files: %s".formatted(err.getMessage())))
                 .map(IterUtil::toList);
     }
+
+    @Override
+    public Future<Integer> deleteAllCompletedFiles() {
+        return SqlTemplate
+                .forQuery(sqlClient, """
+                        SELECT * FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
+                        """)
+                .mapTo(FileRecord.ROW_MAPPER)
+                .execute(Map.of())
+                .compose(files -> {
+                    List<FileRecord> fileList = IterUtil.toList(files);
+                    if (CollUtil.isEmpty(fileList)) {
+                        return Future.succeededFuture(0);
+                    }
+                    
+                    // Delete files from database
+                    return SqlTemplate
+                            .forUpdate(sqlClient, """
+                                    DELETE FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
+                                    """)
+                            .execute(Map.of())
+                            .map(result -> {
+                                // Return deleted file records for file system cleanup
+                                return fileList.size();
+                            })
+                            .onSuccess(count -> log.info("Successfully deleted %d completed files from database".formatted(count)));
+                });
+    }
 }

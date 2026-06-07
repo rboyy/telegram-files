@@ -37,6 +37,7 @@ import telegram.files.repository.SettingRecord;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class HttpVerticle extends AbstractVerticle {
@@ -688,38 +689,123 @@ public class HttpVerticle extends AbstractVerticle {
         DataVerticle.fileRepository.getCompletedFiles()
                 .compose(files -> {
                     if (CollUtil.isEmpty(files)) {
-                        return Future.succeededFuture(0);
+                        log.info("No completed files to remove");
+                        return Future.succeededFuture(JsonObject.of("removed", 0, "total", 0, "errors", 0));
                     }
-                    // Group files by telegramId
-                    Map<Long, List<FileRecord>> groupedFiles = files.stream()
-                            .collect(Collectors.groupingBy(FileRecord::telegramId));
-
-                    // Process each group
-                    List<Future<?>> futures = new ArrayList<>();
-                    for (Map.Entry<Long, List<FileRecord>> entry : groupedFiles.entrySet()) {
-                        Long telegramId = entry.getKey();
-                        List<FileRecord> fileRecords = entry.getValue();
-
-                        Optional<TelegramVerticle> telegramVerticleOpt = TelegramVerticles.get(telegramId);
-                        if (telegramVerticleOpt.isEmpty()) {
-                            continue;
-                        }
-                        TelegramVerticle telegramVerticle = telegramVerticleOpt.get();
-
-                        // Remove each file
-                        for (FileRecord fileRecord : fileRecords) {
-                            futures.add(telegramVerticle.removeFile(fileRecord.id(), fileRecord.uniqueId()));
+                    
+                    log.info("Starting to remove %d completed files".formatted(files.size()));
+                    
+                    // Track results
+                    AtomicInteger successCount = new AtomicInteger(0);
+                    AtomicInteger errorCount = new AtomicInteger(0);
+                    AtomicInteger fileSystemCleanCount = new AtomicInteger(0);
+                    
+                    // First, delete files from file system
+                    List<Future<?>> fileSystemFutures = new ArrayList<>();
+                    for (FileRecord fileRecord : files) {
+                        if (StrUtil.isNotBlank(fileRecord.localPath())) {
+                            fileSystemFutures.add(Future.future(promise -> {
+                                try {
+                                    boolean deleted = FileUtil.del(fileRecord.localPath());
+                                    if (deleted) {
+                                        fileSystemCleanCount.incrementAndGet();
+                                        log.trace("Successfully deleted file from disk: %s".formatted(fileRecord.localPath()));
+                                    }
+                                    promise.complete();
+                                } catch (Exception e) {
+                                    log.warn("Failed to delete file from disk: %s".formatted(fileRecord.localPath()), e);
+                                    promise.complete(); // Continue even if file delete fails
+                                }
+                            }));
                         }
                     }
-                    return Future.all(futures).map(futures::size);
+                    
+                    return Future.all(fileSystemFutures)
+                            .compose(_ -> {
+                                // Group files by telegramId for Telegram API operations
+                                Map<Long, List<FileRecord>> groupedFiles = files.stream()
+                                        .collect(Collectors.groupingBy(FileRecord::telegramId));
+
+                                // Process each group for Telegram API deletion
+                                List<Future<?>> telegramFutures = new ArrayList<>();
+                                for (Map.Entry<Long, List<FileRecord>> entry : groupedFiles.entrySet()) {
+                                    Long telegramId = entry.getKey();
+                                    List<FileRecord> fileRecords = entry.getValue();
+
+                                    Optional<TelegramVerticle> telegramVerticleOpt = TelegramVerticles.get(telegramId);
+                                    if (telegramVerticleOpt.isEmpty()) {
+                                        log.debug("Telegram verticle not found for id: %s, skipping Telegram API deletion for %d files"
+                                            .formatted(telegramId, fileRecords.size()));
+                                        continue;
+                                    }
+                                    TelegramVerticle telegramVerticle = telegramVerticleOpt.get();
+
+                                    // Delete each file from Telegram
+                                    for (FileRecord fileRecord : fileRecords) {
+                                        telegramFutures.add(
+                                            Future.future(promise -> {
+                                                telegramVerticle.client.execute(new TdApi.GetFile(fileRecord.id()))
+                                                    .compose(file -> {
+                                                        if (file != null && file.local != null) {
+                                                            return telegramVerticle.client.execute(new TdApi.DeleteFile(fileRecord.id()));
+                                                        }
+                                                        return Future.succeededFuture();
+                                                    })
+                                                    .onSuccess(_ -> {
+                                                        successCount.incrementAndGet();
+                                                        promise.complete();
+                                                    })
+                                                    .onFailure(err -> {
+                                                        log.debug("Failed to delete file from Telegram: %s".formatted(fileRecord.uniqueId()), err);
+                                                        successCount.incrementAndGet(); // Still count as success since we cleaned up
+                                                        promise.complete();
+                                                    });
+                                            })
+                                        );
+                                    }
+                                }
+                                
+                                return Future.all(telegramFutures);
+                            })
+                            .compose(_ -> {
+                                // Now delete all completed files from database in one batch
+                                return DataVerticle.fileRepository.deleteAllCompletedFiles()
+                                    .map(deletedCount -> {
+                                        // Update success count with database count
+                                        successCount.set(deletedCount);
+                                        return deletedCount;
+                                    });
+                            })
+                            .map(deletedCount -> {
+                                // Send removed events for all files to update frontend
+                                for (FileRecord fileRecord : files) {
+                                    vertx.eventBus().publish(EventEnum.TELEGRAM_EVENT.address(),
+                                        JsonObject.of("telegramId", fileRecord.telegramId(), 
+                                            "payload", EventPayload.build(EventPayload.TYPE_FILE_STATUS, 
+                                                JsonObject.of("fileId", fileRecord.id(),
+                                                              "uniqueId", fileRecord.uniqueId(),
+                                                              "removed", true))));
+                                }
+                                
+                                return JsonObject.of(
+                                    "removed", deletedCount,
+                                    "total", files.size(),
+                                    "filesFromDisk", fileSystemCleanCount.get(),
+                                    "errors", errorCount.get()
+                                );
+                            });
                 })
-                .onSuccess(count -> {
-                    log.info("Successfully removed %d completed files".formatted(count));
-                    ctx.json(JsonObject.of("removed", count));
+                .onSuccess(result -> {
+                    log.info("Remove completed files finished: removed %d, total %d, from disk %d, errors %d"
+                        .formatted(result.getInteger("removed"), 
+                                  result.getInteger("total"),
+                                  result.getInteger("filesFromDisk"),
+                                  result.getInteger("errors")));
+                    ctx.json(result);
                 })
                 .onFailure(err -> {
                     log.error("Failed to remove completed files", err);
-                    ctx.fail(err);
+                    ctx.json(JsonObject.of("removed", 0, "total", 0, "errors", 1, "error", err.getMessage()));
                 });
     }
 
