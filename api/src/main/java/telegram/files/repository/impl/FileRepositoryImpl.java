@@ -40,30 +40,43 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
 
     @Override
     public Future<FileRecord> create(FileRecord fileRecord) {
-        return SqlTemplate
-                .forUpdate(sqlClient, """
-                        INSERT INTO file_record(id, unique_id, telegram_id, chat_id, message_id, media_album_id, date, has_sensitive_content,
-                                                size, downloaded_size,
-                                                type, mime_type,
-                                                file_name, thumbnail, thumbnail_unique_id, caption, extra, local_path,
-                                                download_status, start_date, transfer_status, tags, thread_chat_id, message_thread_id, reaction_count)
-                        values (#{id}, #{unique_id}, #{telegram_id}, #{chat_id}, #{message_id}, #{media_album_id}, #{date},
-                                #{has_sensitive_content}, #{size}, #{downloaded_size}, #{type},
-                                #{mime_type}, #{file_name}, #{thumbnail}, #{thumbnail_unique_id}, #{caption}, #{extra}, #{local_path},
-                                #{download_status}, #{start_date}, #{transfer_status}, #{tags}, #{thread_chat_id}, #{message_thread_id}, #{reaction_count})
-                        """)
-                .mapFrom(FileRecord.PARAM_MAPPER)
-                .execute(fileRecord)
-                .map(r -> fileRecord)
-                .compose(r -> {
-                    if (Objects.equals(r.type(), "thumbnail")) {
-                        return Future.succeededFuture(r);
-                    } else {
-                        return this.updateAlbumDataByMediaAlbumId(fileRecord.mediaAlbumId(), fileRecord.caption(), fileRecord.reactionCount()).map(r);
+        return this.getByUniqueId(fileRecord.uniqueId())
+                .compose(existingRecord -> {
+                    if (existingRecord != null) {
+                        log.trace("File record already exists, returning existing: %s".formatted(fileRecord.id()));
+                        return Future.succeededFuture(existingRecord);
                     }
-                })
-                .onSuccess(r -> log.trace("Successfully created file record: %s".formatted(fileRecord.id())))
-                .onFailure(err -> log.error("Failed to create file record: %s".formatted(err.getMessage())));
+                    return SqlTemplate
+                            .forUpdate(sqlClient, """
+                                    INSERT INTO file_record(id, unique_id, telegram_id, chat_id, message_id, media_album_id, date, has_sensitive_content,
+                                                            size, downloaded_size,
+                                                            type, mime_type,
+                                                            file_name, thumbnail, thumbnail_unique_id, caption, extra, local_path,
+                                                            download_status, start_date, transfer_status, tags, thread_chat_id, message_thread_id, reaction_count)
+                                    values (#{id}, #{unique_id}, #{telegram_id}, #{chat_id}, #{message_id}, #{media_album_id}, #{date},
+                                            #{has_sensitive_content}, #{size}, #{downloaded_size}, #{type},
+                                            #{mime_type}, #{file_name}, #{thumbnail}, #{thumbnail_unique_id}, #{caption}, #{extra}, #{local_path},
+                                            #{download_status}, #{start_date}, #{transfer_status}, #{tags}, #{thread_chat_id}, #{message_thread_id}, #{reaction_count})
+                                    """)
+                            .mapFrom(FileRecord.PARAM_MAPPER)
+                            .execute(fileRecord)
+                            .map(r -> fileRecord)
+                            .compose(r -> {
+                                if (Objects.equals(r.type(), "thumbnail")) {
+                                    return Future.succeededFuture(r);
+                                } else {
+                                    return this.updateAlbumDataByMediaAlbumId(fileRecord.mediaAlbumId(), fileRecord.caption(), fileRecord.reactionCount()).map(r);
+                                }
+                            })
+                            .onSuccess(r -> log.trace("Successfully created file record: %s".formatted(fileRecord.id())))
+                            .onFailure(err -> {
+                                if (err.getMessage() != null && err.getMessage().contains("constraint")) {
+                                    log.trace("File record already exists (constraint violation): %s".formatted(fileRecord.id()));
+                                } else {
+                                    log.error("Failed to create file record: %s".formatted(err.getMessage()));
+                                }
+                            });
+                });
     }
 
     @Override
