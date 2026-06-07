@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type DownloadStatus,
   type FileFilter,
@@ -27,6 +27,17 @@ type FileResponse = {
   nextFromMessageId: number;
 };
 
+type FileStatusUpdate = {
+  fileId: number;
+  downloadStatus: DownloadStatus;
+  localPath?: string;
+  completionDate?: number;
+  downloadedSize: number;
+  transferStatus?: TransferStatus;
+  thumbnailFile?: Thumbnail;
+  removed?: boolean;
+};
+
 export function useFiles(
   accountId: string,
   chatId: string,
@@ -38,26 +49,14 @@ export function useFiles(
     ? "/files"
     : `/telegram/${accountId}/chat/${chatId}/files`;
   const { lastJsonMessage } = useWebsocket();
-  const [latestFilesStatus, setLatestFileStatus] = useState<
-    Record<
-      string,
-      {
-        fileId: number;
-        downloadStatus: DownloadStatus;
-        localPath?: string;
-        completionDate?: number;
-        downloadedSize: number;
-        transferStatus?: TransferStatus;
-        thumbnailFile?: Thumbnail;
-        removed?: boolean;
-      }
-    >
-  >({});
+  const latestFilesStatusRef = useRef<Record<string, FileStatusUpdate>>({});
+  const [, forceUpdate] = useState({});
   const [filters, setFilters, clearFilters] = useLocalStorage<FileFilter>(
     "telegramFileListFilter",
     { ...DEFAULT_FILTERS, offline: noAccountSpecified },
   );
-  const getKey = (page: number, previousPageData: FileResponse) => {
+
+  const getKey = useCallback((page: number, previousPageData: FileResponse | null) => {
     const params = new URLSearchParams({
       ...(filters.search && {
         search: window.encodeURIComponent(filters.search),
@@ -102,7 +101,7 @@ export function useFiles(
       }
     }
     return `${url}?${params.toString()}`;
-  };
+  }, [filters, messageThreadId, link, url]);
 
   const {
     data: pages,
@@ -139,8 +138,8 @@ export function useFiles(
     };
 
     if (data.removed) {
-      setLatestFileStatus((prev) => ({
-        ...prev,
+      latestFilesStatusRef.current = {
+        ...latestFilesStatusRef.current,
         [data.uniqueId]: {
           fileId: data.fileId,
           downloadStatus: "idle",
@@ -150,26 +149,26 @@ export function useFiles(
           transferStatus: "idle",
           removed: true,
         },
-      }));
-      return;
+      };
+    } else {
+      latestFilesStatusRef.current = {
+        ...latestFilesStatusRef.current,
+        [data.uniqueId]: {
+          fileId: data.fileId,
+          downloadStatus:
+            data.downloadStatus ?? latestFilesStatusRef.current[data.uniqueId]?.downloadStatus,
+          localPath: data.localPath ?? latestFilesStatusRef.current[data.uniqueId]?.localPath,
+          completionDate:
+            data.completionDate ?? latestFilesStatusRef.current[data.uniqueId]?.completionDate,
+          downloadedSize:
+            data.downloadedSize ?? latestFilesStatusRef.current[data.uniqueId]?.downloadedSize,
+          transferStatus:
+            data.transferStatus ?? latestFilesStatusRef.current[data.uniqueId]?.transferStatus,
+          thumbnailFile: data.thumbnailFile ?? latestFilesStatusRef.current[data.uniqueId]?.thumbnailFile,
+        },
+      };
     }
-
-    setLatestFileStatus((prev) => ({
-      ...prev,
-      [data.uniqueId]: {
-        fileId: data.fileId,
-        downloadStatus:
-          data.downloadStatus ?? prev[data.uniqueId]?.downloadStatus,
-        localPath: data.localPath ?? prev[data.uniqueId]?.localPath,
-        completionDate:
-          data.completionDate ?? prev[data.uniqueId]?.completionDate,
-        downloadedSize:
-          data.downloadedSize ?? prev[data.uniqueId]?.downloadedSize,
-        transferStatus:
-          data.transferStatus ?? prev[data.uniqueId]?.transferStatus,
-        thumbnailFile: data.thumbnailFile ?? prev[data.uniqueId]?.thumbnailFile,
-      },
-    }));
+    forceUpdate({});
   }, [lastJsonMessage]);
 
   useEffect(() => {
@@ -186,29 +185,19 @@ export function useFiles(
     const files: TelegramFile[] = [];
     pages.forEach((page) => {
       page.files.forEach((file) => {
-        if (file.originalDeleted && latestFilesStatus[file.uniqueId]?.removed) {
+        const statusUpdate = latestFilesStatusRef.current[file.uniqueId];
+        if (file.originalDeleted && statusUpdate?.removed) {
           return;
         }
         files.push({
           ...file,
-          id: latestFilesStatus[file.uniqueId]?.fileId ?? file.id,
-          downloadStatus:
-            latestFilesStatus[file.uniqueId]?.downloadStatus ??
-            file.downloadStatus,
-          localPath:
-            latestFilesStatus[file.uniqueId]?.localPath ?? file.localPath,
-          completionDate:
-            latestFilesStatus[file.uniqueId]?.completionDate ??
-            file.completionDate,
-          downloadedSize:
-            latestFilesStatus[file.uniqueId]?.downloadedSize ??
-            file.downloadedSize,
-          transferStatus:
-            latestFilesStatus[file.uniqueId]?.transferStatus ??
-            file.transferStatus,
-          thumbnailFile:
-            latestFilesStatus[file.uniqueId]?.thumbnailFile ??
-            file.thumbnailFile,
+          id: statusUpdate?.fileId ?? file.id,
+          downloadStatus: statusUpdate?.downloadStatus ?? file.downloadStatus,
+          localPath: statusUpdate?.localPath ?? file.localPath,
+          completionDate: statusUpdate?.completionDate ?? file.completionDate,
+          downloadedSize: statusUpdate?.downloadedSize ?? file.downloadedSize,
+          transferStatus: statusUpdate?.transferStatus ?? file.transferStatus,
+          thumbnailFile: statusUpdate?.thumbnailFile ?? file.thumbnailFile,
         });
       });
     });
@@ -217,7 +206,7 @@ export function useFiles(
       file.next = files[index + 1];
     });
     return files;
-  }, [pages, latestFilesStatus]);
+  }, [pages]);
 
   const hasMore = useMemo(() => {
     if (!pages || pages.length === 0) return true;
@@ -232,12 +221,12 @@ export function useFiles(
     return hasMore;
   }, [pages]);
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     if (isLoading || isValidating || !hasMore || error) return;
     await setSize(size + 1);
-  };
+  }, [isLoading, isValidating, hasMore, error, size, setSize]);
 
-  const handleFilterChange = async (newFilters: FileFilter) => {
+  const handleFilterChange = useCallback(async (newFilters: FileFilter) => {
     if (
       Object.keys(newFilters).every(
         (key) =>
@@ -249,9 +238,9 @@ export function useFiles(
     }
     setFilters(newFilters);
     await setSize(1);
-  };
+  }, [filters, setFilters, setSize]);
 
-  const updateField = async (
+  const updateField = useCallback(async (
     uniqueId: string,
     patch: Partial<TelegramFile>,
   ) => {
@@ -268,7 +257,7 @@ export function useFiles(
         };
       });
     }, false);
-  };
+  }, [mutate]);
 
   return {
     size,
