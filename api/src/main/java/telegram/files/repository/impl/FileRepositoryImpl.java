@@ -745,4 +745,16 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
                 )
                 .mapEmpty();
     }
+
+    @Override
+    public Future<List<FileRecord>> getCompletedFiles() {
+        return SqlTemplate
+                .forQuery(sqlClient, """
+                        SELECT * FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
+                        """)
+                .mapTo(FileRecord.ROW_MAPPER)
+                .execute(Map.of())
+                .onFailure(err -> log.error("Failed to get completed files: %s".formatted(err.getMessage())))
+                .map(IterUtil::toList);
+    }
 }

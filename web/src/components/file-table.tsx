@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { LoaderPinwheel, SquareChevronLeft, WandSparkles } from "lucide-react";
+import { LoaderPinwheel, SquareChevronLeft, WandSparkles, Trash2 } from "lucide-react";
 import { useFiles } from "@/hooks/use-files";
 import {
   getRowHeightPX,
@@ -21,6 +21,16 @@ import FileViewer from "@/components/file-viewer";
 import FileFilters from "./file-filters";
 import { Badge } from "@/components/ui/badge";
 import FileBatchControl from "@/components/file-batch-control";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { POST } from "@/lib/api";
 
 const COLUMNS: Column[] = [
   {
@@ -92,7 +102,24 @@ export function FileTable({
     size,
     files,
     handleLoadMore,
+    mutate,
   } = useFilesProps;
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  const handleDeleteAllCompleted = async () => {
+    setIsDeletingAll(true);
+    try {
+      await POST("/files/remove-all-completed");
+      // 刷新文件列表
+      await mutate();
+      setDeleteAllDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to delete all completed files:", error);
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
   const [currentViewFile, setCurrentViewFile] = useState<
     TelegramFile | undefined
   >();
@@ -222,6 +249,19 @@ export function FileTable({
           )}
         </div>
         <div className="hidden gap-4 md:flex">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteAllDialogOpen(true)}
+            disabled={isDeletingAll}
+          >
+            {isDeletingAll ? (
+              <LoaderPinwheel className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="mr-2 h-4 w-4" />
+            )}
+            删除所有已下载
+          </Button>
           <TableColumnFilter
             columns={columns}
             onColumnConfigChange={setColumns}
@@ -324,6 +364,36 @@ export function FileTable({
           </div>
         </div>
       </div>
+
+      <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除所有已下载文件</DialogTitle>
+            <DialogDescription>
+              此操作将删除所有下载状态为“已完成”的文件。删除后不可恢复！
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button variant="outline">取消</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAllCompleted}
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? (
+                <>
+                  <LoaderPinwheel className="mr-2 h-4 w-4 animate-spin" />
+                  删除中...
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

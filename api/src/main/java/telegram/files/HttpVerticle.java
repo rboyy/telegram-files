@@ -170,6 +170,7 @@ public class HttpVerticle extends AbstractVerticle {
         router.post("/files/cancel-download-multiple").handler(this::handleFileCancelDownloadMultiple);
         router.post("/files/toggle-pause-download-multiple").handler(this::handleFileTogglePauseDownloadMultiple);
         router.post("/files/remove-multiple").handler(this::handleFileRemoveMultiple);
+        router.post("/files/remove-all-completed").handler(this::handleFileRemoveAllCompleted);
         router.post("/files/update-tags").handler(this::handleFileTagsUpdateMultiple);
         router.post("/file/:uniqueId/update-tags").handler(this::handleFileTagsUpdate);
 
@@ -681,6 +682,45 @@ public class HttpVerticle extends AbstractVerticle {
             }
             return telegramVerticle.removeFile(fileId, uniqueId);
         });
+    }
+
+    private void handleFileRemoveAllCompleted(RoutingContext ctx) {
+        DataVerticle.fileRepository.getCompletedFiles()
+                .compose(files -> {
+                    if (CollUtil.isEmpty(files)) {
+                        return Future.succeededFuture(0);
+                    }
+                    // Group files by telegramId
+                    Map<Long, List<FileRecord>> groupedFiles = files.stream()
+                            .collect(Collectors.groupingBy(FileRecord::telegramId));
+
+                    // Process each group
+                    List<Future<?>> futures = new ArrayList<>();
+                    for (Map.Entry<Long, List<FileRecord>> entry : groupedFiles.entrySet()) {
+                        Long telegramId = entry.getKey();
+                        List<FileRecord> fileRecords = entry.getValue();
+
+                        Optional<TelegramVerticle> telegramVerticleOpt = TelegramVerticles.get(telegramId);
+                        if (telegramVerticleOpt.isEmpty()) {
+                            continue;
+                        }
+                        TelegramVerticle telegramVerticle = telegramVerticleOpt.get();
+
+                        // Remove each file
+                        for (FileRecord fileRecord : fileRecords) {
+                            futures.add(telegramVerticle.removeFile(fileRecord.id(), fileRecord.uniqueId()));
+                        }
+                    }
+                    return Future.all(futures).map(futures::size);
+                })
+                .onSuccess(count -> {
+                    log.info("Successfully removed %d completed files".formatted(count));
+                    ctx.json(JsonObject.of("removed", count));
+                })
+                .onFailure(err -> {
+                    log.error("Failed to remove completed files", err);
+                    ctx.fail(err);
+                });
     }
 
     private void handleFileTagsUpdateMultiple(RoutingContext ctx) {

@@ -269,5 +269,6 @@ export function useFiles(
     clearFilters,
     handleLoadMore,
     hasMore,
+    mutate,
   };
 }
