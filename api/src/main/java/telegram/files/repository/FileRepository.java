@@ -56,4 +56,6 @@ public interface FileRepository {
     Future<Void> deleteByUniqueId(String uniqueId);
 
     Future<List<FileRecord>> getCompletedFiles();
+    
+    Future<Integer> deleteAllCompletedFiles();
 }

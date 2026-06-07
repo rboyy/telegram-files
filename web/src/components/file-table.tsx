@@ -31,6 +31,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { POST } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 const COLUMNS: Column[] = [
   {
@@ -110,12 +111,40 @@ export function FileTable({
   const handleDeleteAllCompleted = async () => {
     setIsDeletingAll(true);
     try {
-      await POST("/files/remove-all-completed");
+      const result = await POST("/files/remove-all-completed");
       // 刷新文件列表
       await mutate();
       setDeleteAllDialogOpen(false);
+      
+      // 显示成功反馈
+      if (result && result.removed > 0) {
+        toast({
+          title: "删除成功",
+          description: `已删除 ${result.removed} 个已下载文件${
+            result.filesFromDisk ? `，清理了 ${result.filesFromDisk} 个磁盘文件` : ""
+          }`,
+          variant: "default",
+        });
+      } else if (result && result.removed === 0 && result.total === 0) {
+        toast({
+          title: "没有可删除的文件",
+          description: "当前没有已下载完成的文件需要删除",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "删除完成",
+          description: "部分文件可能未删除，请查看日志了解详情",
+          variant: "default",
+        });
+      }
     } catch (error) {
       console.error("Failed to delete all completed files:", error);
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : "删除文件时发生未知错误",
+        variant: "destructive",
+      });
     } finally {
       setIsDeletingAll(false);
     }
@@ -366,21 +395,36 @@ export function FileTable({
       </div>
 
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>确认删除所有已下载文件</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold">确认删除所有已下载文件</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
               此操作将删除所有下载状态为“已完成”的文件。删除后不可恢复！
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="my-4 rounded-lg border p-4 bg-muted/50">
+            <div className="flex items-center justify-center gap-2 text-center">
+              <Trash2 className="h-8 w-8 text-red-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  将删除 <span className="font-bold text-foreground">
+                    {files.filter(f => f.downloadStatus === "completed").length}
+                  </span> 个文件
+                </p>
+              </div>
+            </div>
+          </div>
+          
           <DialogFooter className="gap-2 sm:gap-0">
             <DialogClose asChild>
-              <Button variant="outline">取消</Button>
+              <Button variant="outline" className="flex-1">取消</Button>
             </DialogClose>
             <Button
               variant="destructive"
               onClick={handleDeleteAllCompleted}
               disabled={isDeletingAll}
+              className="flex-1"
             >
               {isDeletingAll ? (
                 <>
