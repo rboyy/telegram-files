@@ -168,7 +168,7 @@ export default function SettingsForm() {
             <div className="flex items-center justify-between">
               <Label htmlFor="limit">每个账户的限制</Label>
               <span className="text-muted-foreground">
-                {settings?.autoDownloadLimit ?? 5} / 10
+                {settings?.autoDownloadLimit ?? 5} / 50
               </span>
             </div>
             <Slider
@@ -177,7 +177,7 @@ export default function SettingsForm() {
                 void setSetting("autoDownloadLimit", String(v[0]));
               }}
               min={1}
-              max={10}
+              max={50}
               step={1}
               className="w-full"
             />
