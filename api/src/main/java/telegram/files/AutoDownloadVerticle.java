@@ -156,6 +156,16 @@ public class AutoDownloadVerticle extends AbstractVerticle {
             log.trace("Auto download message received: %s".formatted(message.body()));
             this.onNewMessage((JsonObject) message.body());
         });
+        vertx.eventBus().consumer(EventEnum.AUTO_DOWNLOAD_UPDATE.address(), message -> {
+            log.debug("Auto download settings update received!");
+            SettingAutoRecords records = Json.decodeValue(message.body().toString(), SettingAutoRecords.class);
+            records.automations.forEach(auto -> {
+                if (auto.download.enabled && auto.download.rule.downloadHistory && auto.isNotComplete(SettingAutoRecords.HISTORY_DOWNLOAD_STATE)) {
+                    log.info("Start immediate download for new auto download setting: %s".formatted(auto.uniqueKey()));
+                    addHistoryMessage(auto);
+                }
+            });
+        });
         return Future.succeededFuture();
     }
 
