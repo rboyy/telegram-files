@@ -50,7 +50,7 @@ export function useFiles(
     : `/telegram/${accountId}/chat/${chatId}/files`;
   const { lastJsonMessage } = useWebsocket();
   const latestFilesStatusRef = useRef<Record<string, FileStatusUpdate>>({});
-  const [, forceUpdate] = useState({});
+  const [updateCounter, setUpdateCounter] = useState(0);
   const [filters, setFilters, clearFilters] = useLocalStorage<FileFilter>(
     "telegramFileListFilter",
     { ...DEFAULT_FILTERS, offline: noAccountSpecified },
@@ -168,7 +168,7 @@ export function useFiles(
         },
       };
     }
-    forceUpdate({});
+    setUpdateCounter(prev => prev + 1);
   }, [lastJsonMessage]);
 
   useEffect(() => {
@@ -206,7 +206,7 @@ export function useFiles(
       file.next = files[index + 1];
     });
     return files;
-  }, [pages]);
+  }, [pages, updateCounter]);
 
   const hasMore = useMemo(() => {
     if (!pages || pages.length === 0) return true;
