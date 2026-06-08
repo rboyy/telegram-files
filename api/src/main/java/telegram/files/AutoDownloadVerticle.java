@@ -228,6 +228,14 @@ public class AutoDownloadVerticle extends AbstractVerticle {
         }
 
         log.debug("Start scan history! TelegramId: %d ChatId: %d FileType: %s".formatted(telegramId, chatId, nextFileType));
+        
+        if (!autoRecords.exists(telegramId, chatId) || 
+            !autoRecords.getItem(telegramId, chatId).download.enabled) {
+            log.info("Auto download has been disabled for chat: %d, stopping scan!".formatted(chatId));
+            callback.accept(new ScanResult(nextFileType, nextFromMessageId, true));
+            return;
+        }
+
         if (System.currentTimeMillis() - currentTimeMillis > MAX_HISTORY_SCAN_TIME) {
             log.debug("Scan history timeout! TelegramId: %d ChatId: %d".formatted(telegramId, chatId));
             callback.accept(new ScanResult(nextFileType, nextFromMessageId, false));
