@@ -99,6 +99,10 @@ shadowJar {
                 'Main-Class': 'telegram.files.Start'
         )
     }
+    mergeServiceFiles()
+    signing {
+        enabled = false
+    }
 }
 
 tasks.named('jar') {
