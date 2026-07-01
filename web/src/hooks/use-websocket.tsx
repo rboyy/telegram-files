@@ -10,11 +10,9 @@ import {
 } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import {
-  type TelegramError,
   type WebSocketMessage,
   WebSocketMessageType,
 } from "@/lib/websocket-types";
-import { useToast } from "./use-toast";
 import { useDebounce } from "use-debounce";
 import { getWsUrl } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
@@ -47,7 +45,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     lastDownloadedSize: 0,
     lastTimestamp: 0,
   });
-  const { toast } = useToast();
   const [debounceSpeed] = useDebounce(accountDownloadSpeed.speed, 300, {
     leading: true,
     maxWait: 1000,
@@ -85,10 +82,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         const timestamp = payload.timestamp;
         switch (payload.type) {
           case WebSocketMessageType.ERROR:
-            toast({
-              variant: "error",
-              description: (payload.data as TelegramError).message,
-            });
+            // Error toasts for method calls are handled by useTelegramMethod.
+            // This avoids duplicate toasts when a method call fails.
             break;
           case WebSocketMessageType.FILE_DOWNLOAD:
             const { downloadedSize, totalCount } = payload.data as {
@@ -134,7 +129,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.error("Failed to parse WebSocket message:", error);
       }
     }
-  }, [lastJsonMessage, toast]);
+  }, [lastJsonMessage]);
 
   const sendWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {

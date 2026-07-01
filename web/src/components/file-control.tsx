@@ -114,13 +114,6 @@ export default function FileControl({
           method: "GetMessageThread",
         })
           .then((result) => {
-            if (!result) {
-              toast({
-                variant: "error",
-                description: "获取消息线程失败",
-              });
-              return;
-            }
             const { chatId, messageThreadId } = result as {
               chatId: number;
               messageThreadId: number;
@@ -129,10 +122,10 @@ export default function FileControl({
               `/accounts?id=${file.telegramId}&chatId=${chatId}&messageThreadId=${messageThreadId}`,
             );
           })
-          .catch(() => {
+          .catch((error: Error) => {
             toast({
               variant: "error",
-              description: "获取消息线程失败",
+              description: error?.message || "获取消息线程失败",
             });
           });
       }

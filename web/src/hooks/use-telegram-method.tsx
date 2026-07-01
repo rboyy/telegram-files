@@ -43,7 +43,15 @@ export function useTelegramMethod() {
 
     const pendingRequest = pendingRequestsRef.current.get(code);
     if (pendingRequest) {
-      pendingRequest.resolve(data);
+      if (lastJsonMessage.type === -1) {
+        const errorMessage =
+          typeof data === "object" && data !== null && "message" in data
+            ? String((data as Record<string, unknown>).message)
+            : "Unknown error";
+        pendingRequest.reject(new Error(errorMessage));
+      } else {
+        pendingRequest.resolve(data);
+      }
       pendingRequestsRef.current.delete(code);
       setPendingCount(pendingRequestsRef.current.size);
     }
