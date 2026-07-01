@@ -39,29 +39,13 @@ export function useTelegramMethod() {
     const data = lastJsonMessage.data;
 
     lastResultRef.current = { code, result: data };
-    setLastMethod({ code, result: data }); // 同步 state
+    setLastMethod({ code, result: data });
 
     const pendingRequest = pendingRequestsRef.current.get(code);
     if (pendingRequest) {
       pendingRequest.resolve(data);
       pendingRequestsRef.current.delete(code);
       setPendingCount(pendingRequestsRef.current.size);
-    }
-  }, [lastJsonMessage]);
-
-  useEffect(() => {
-    if (!lastJsonMessage?.code) return;
-
-    const code = lastJsonMessage.code;
-    const data = lastJsonMessage.data;
-
-    lastResultRef.current = { code, result: data };
-
-    const pendingRequest = pendingRequestsRef.current.get(code);
-    if (pendingRequest) {
-      pendingRequest.resolve(data);
-      pendingRequestsRef.current.delete(code);
-      setPendingCount(pendingRequestsRef.current.size); // 更新 state
     }
   }, [lastJsonMessage]);
 

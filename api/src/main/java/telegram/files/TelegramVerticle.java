@@ -106,6 +106,9 @@ public class TelegramVerticle extends AbstractVerticle {
 
     @Override
     public void stop(Promise<Void> stopPromise) {
+        if (avgSpeedPersistenceTimerId != 0) {
+            vertx.cancelTimer(avgSpeedPersistenceTimerId);
+        }
         this.close(false)
                 .onComplete(stopPromise);
     }
@@ -935,7 +938,7 @@ public class TelegramVerticle extends AbstractVerticle {
                     if (r == null || r.isEmpty()) {
                         return Future.failedFuture("File is downloaded completed, but update status failed");
                     } else {
-                        return Future.failedFuture("File is already downloaded successfully");
+                        return Future.succeededFuture();
                     }
                 });
     }

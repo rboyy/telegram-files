@@ -79,7 +79,13 @@ function FileCaption({ file, rowHeight, ellipsis }: FileExtraProps) {
           <p
             className="no-scrollbar max-h-96 max-w-80 overflow-auto text-wrap rounded p-2"
             dangerouslySetInnerHTML={{
-              __html: file.caption.replaceAll("\n", "<br />"),
+              __html: file.caption
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;")
+                .replaceAll("\n", "<br />"),
             }}
           ></p>
         </TooltipContent>

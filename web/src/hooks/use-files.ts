@@ -59,7 +59,7 @@ export function useFiles(
   const getKey = useCallback((page: number, previousPageData: FileResponse | null) => {
     const params = new URLSearchParams({
       ...(filters.search && {
-        search: window.encodeURIComponent(filters.search),
+        search: filters.search,
       }),
       ...(filters.type && { type: filters.type }),
       ...(filters.downloadStatus && { downloadStatus: filters.downloadStatus }),
@@ -69,7 +69,7 @@ export function useFiles(
         tags: filters.tags.join(","),
       }),
       ...(messageThreadId && { messageThreadId: messageThreadId.toString() }),
-      ...(link && { link: window.encodeURIComponent(link) }),
+      ...(link && { link: encodeURIComponent(link) }),
       ...(filters.dateType && { dateType: filters.dateType }),
       ...(filters.dateRange && { dateRange: filters.dateRange.join(",") }),
       ...(filters.sizeRange && { sizeRange: filters.sizeRange.join(",") }),
@@ -167,6 +167,14 @@ export function useFiles(
           thumbnailFile: data.thumbnailFile ?? latestFilesStatusRef.current[data.uniqueId]?.thumbnailFile,
         },
       };
+    }
+    // Prevent unbounded growth - keep only the latest 500 entries
+    const keys = Object.keys(latestFilesStatusRef.current);
+    if (keys.length > 500) {
+      const toRemove = keys.slice(0, keys.length - 500);
+      for (const key of toRemove) {
+        delete latestFilesStatusRef.current[key];
+      }
     }
     setUpdateCounter(prev => prev + 1);
   }, [lastJsonMessage]);

@@ -93,7 +93,8 @@ public class Config {
                 "[%1$tF %1$tT] [%4$s] %5$s %6$s%n");
 
         if (ArrayUtil.isNotEmpty(rootLogger.getHandlers())) {
-            for (Handler handler : rootLogger.getHandlers()) {
+            Handler[] handlers = rootLogger.getHandlers();
+            for (Handler handler : handlers) {
                 rootLogger.removeHandler(handler);
             }
         }

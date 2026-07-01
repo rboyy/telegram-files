@@ -36,7 +36,7 @@ public class AvgSpeed {
     /**
      * Update download progress
      */
-    public void update(long downloadedSize, long timestamp) {
+    public synchronized void update(long downloadedSize, long timestamp) {
         if (downloadedSize <= 0) {
             removeOldPoints(timestamp);
             return;
@@ -144,7 +144,7 @@ public class AvgSpeed {
     /**
      * Get average speed in bytes per second for last interval
      */
-    public long getSpeed() {
+    public synchronized long getSpeed() {
         if (speedPoints.size() < 2) {
             return 0;
         }
@@ -168,7 +168,7 @@ public class AvgSpeed {
     /**
      * Get median speed from all recorded points
      */
-    public long getMedianSpeed() {
+    public synchronized long getMedianSpeed() {
         if (speedPoints.size() < 2) {
             return 0;
         }
@@ -189,7 +189,7 @@ public class AvgSpeed {
     /**
      * Get maximum recorded speed
      */
-    public long getMaxSpeed() {
+    public synchronized long getMaxSpeed() {
         return speedPoints.values().stream()
                 .map(point -> point.speed)
                 .max(Long::compare)
@@ -199,7 +199,7 @@ public class AvgSpeed {
     /**
      * Get minimum recorded speed
      */
-    public long getMinSpeed() {
+    public synchronized long getMinSpeed() {
         return speedPoints.values().stream()
                 .map(point -> point.speed)
                 .filter(speed -> speed > 0)

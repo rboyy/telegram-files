@@ -114,16 +114,18 @@ public class FileRecordRetriever {
     private static Map<String, TdApi.Message> createMessageMap(long chatId, TdApi.Message[] messages, List<FileRecord> records) {
         Map<String, TdApi.Message> messageMap = new HashMap<>();
 
+        // Build a set of (chatId, messageId) pairs for O(1) lookup
+        Set<Long> messageIdSet = records.stream()
+                .filter(record -> record.chatId() == chatId)
+                .map(FileRecord::messageId)
+                .collect(Collectors.toSet());
+
         for (TdApi.Message message : messages) {
             if (message == null) {
                 continue;
             }
-            String uniqueId = TdApiHelp.getFileUniqueId(message);
-
-            boolean matchesFileRecord = records.stream()
-                    .anyMatch(record -> record.messageId() == message.id && record.chatId() == chatId);
-
-            if (matchesFileRecord) {
+            if (messageIdSet.contains(message.id)) {
+                String uniqueId = TdApiHelp.getFileUniqueId(message);
                 messageMap.put(uniqueId, message);
             }
         }

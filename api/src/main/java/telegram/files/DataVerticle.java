@@ -147,10 +147,11 @@ public class DataVerticle extends AbstractVerticle {
     private Future<Boolean> isCompletelyNewInitializationForPostgres() {
         SqlClient sqlClient;
         String query;
+        String sanitizedDbName = Config.DB_NAME.replace("'", "''").replace("\"", "");
         if (Config.DB_NEED_CREATE) {
             query = """
                     SELECT 1 FROM pg_database WHERE datname = '%s'
-                    """.formatted(Config.DB_NAME);
+                    """.formatted(sanitizedDbName);
             sqlClient = createSqlClient(vertx, createDefaultOptions());
         } else {
             query = """
@@ -169,7 +170,7 @@ public class DataVerticle extends AbstractVerticle {
                     if (isNew) {
                         return Config.DB_NEED_CREATE ? sqlClient.query("""
                                         CREATE DATABASE "%s"
-                                        """.formatted(Config.DB_NAME))
+                                        """.formatted(sanitizedDbName))
                                 .execute()
                                 .map(true) : Future.succeededFuture(true);
                     } else {
@@ -187,12 +188,13 @@ public class DataVerticle extends AbstractVerticle {
     private Future<Boolean> isCompletelyNewInitializationForMySQL() {
         SqlClient sqlClient;
         String query;
+        String sanitizedDbName = Config.DB_NAME.replace("'", "''").replace("`", "").replace("\"", "");
         if (Config.DB_NEED_CREATE) {
             query = """
                     SELECT SCHEMA_NAME
                     FROM INFORMATION_SCHEMA.SCHEMATA
                     WHERE SCHEMA_NAME = '%s'
-                    """.formatted(Config.DB_NAME);
+                    """.formatted(sanitizedDbName);
             sqlClient = createSqlClient(vertx, createDefaultOptions());
         } else {
             query = """
@@ -200,7 +202,7 @@ public class DataVerticle extends AbstractVerticle {
                     FROM information_schema.tables
                     WHERE table_schema = '%s'
                     ORDER BY table_name;
-                    """.formatted(Config.DB_NAME);
+                    """.formatted(sanitizedDbName);
             sqlClient = pool;
         }
 
@@ -211,7 +213,7 @@ public class DataVerticle extends AbstractVerticle {
                     if (isNew) {
                         return Config.DB_NEED_CREATE ? sqlClient.query("""
                                         CREATE DATABASE `%s` collate utf8mb4_bin;
-                                        """.formatted(Config.DB_NAME))
+                                        """.formatted(sanitizedDbName))
                                 .execute()
                                 .map(true) :
                                 Future.succeededFuture(true);

@@ -50,20 +50,29 @@ public class SettingRepositoryImpl extends AbstractSqlRepository implements Sett
         if (CollUtil.isEmpty(keys)) {
             return Future.succeededFuture(List.of());
         }
-        String keyStr = keys.stream()
+        List<String> validKeys = keys.stream()
                 .filter(StrUtil::isNotBlank)
                 .distinct()
-                .map(key -> StrUtil.wrap(key, "'"))
+                .toList();
+        if (validKeys.isEmpty()) {
+            return Future.succeededFuture(List.of());
+        }
+        String placeholders = java.util.stream.IntStream.range(0, validKeys.size())
+                .mapToObj(i -> "#{key" + i + "}")
                 .collect(Collectors.joining(","));
+        Map<String, Object> params = new java.util.HashMap<>();
+        for (int i = 0; i < validKeys.size(); i++) {
+            params.put("key" + i, validKeys.get(i));
+        }
 
         return SqlTemplate
                 .forQuery(sqlClient, """
                         SELECT %s, value FROM setting_record WHERE %s IN (%s)
-                        """.formatted(SettingRecord.KEY_FIELD, SettingRecord.KEY_FIELD, keyStr))
+                        """.formatted(SettingRecord.KEY_FIELD, SettingRecord.KEY_FIELD, placeholders))
                 .mapTo(SettingRecord.ROW_MAPPER)
-                .execute(Collections.emptyMap())
+                .execute(params)
                 .map(IterUtil::toList)
-                .onSuccess(_ -> log.trace("Successfully fetched setting record for keys: " + keyStr))
+                .onSuccess(_ -> log.trace("Successfully fetched setting record for keys: " + validKeys))
                 .onFailure(
                         err -> log.error("Failed to fetch setting record: %s".formatted(err.getMessage()))
                 );

@@ -38,7 +38,7 @@ type FileRowProps = {
   onFileClick: () => void;
 };
 
-export default function FileRow({
+const FileRow = React.memo(function FileRow({
   index,
   className,
   style,
@@ -138,4 +138,6 @@ export default function FileRow({
       )}
     </div>
   );
-}
+});
+
+export default FileRow;

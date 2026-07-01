@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createContext, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, createContext, useMemo, useState } from "react";
 import { type TelegramChat } from "@/lib/types";
 import useSWR from "swr";
 import { useDebouncedCallback } from "use-debounce";
@@ -23,6 +23,8 @@ interface TelegramChatContextType {
 const TelegramChatContext = createContext<TelegramChatContextType | undefined>(
   undefined,
 );
+
+const emptyChats: TelegramChat[] = [];
 
 interface TelegramChatProviderProps {
   children: React.ReactNode;
@@ -56,7 +58,7 @@ export const TelegramChatProvider: React.FC<TelegramChatProviderProps> = ({
     [chatId, chats],
   );
 
-  const handleChatChange = (newChatId: string) => {
+  const handleChatChange = useCallback((newChatId: string) => {
     if (newChatId === chatId) {
       return;
     }
@@ -66,7 +68,7 @@ export const TelegramChatProvider: React.FC<TelegramChatProviderProps> = ({
       return;
     }
     router.push(`/accounts?id=${accountId}&chatId=${newChatId}`);
-  };
+  }, [chatId, chats, accountId, router, toast]);
 
   return (
     <TelegramChatContext.Provider
@@ -75,7 +77,7 @@ export const TelegramChatProvider: React.FC<TelegramChatProviderProps> = ({
         reload: mutate,
         chatId,
         chat,
-        chats: chats ?? [],
+        chats: chats ?? emptyChats,
         query,
         archived,
         handleChatChange,

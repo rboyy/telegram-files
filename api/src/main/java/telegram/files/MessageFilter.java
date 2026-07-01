@@ -20,7 +20,6 @@ import telegram.files.repository.FileRecord;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -93,7 +92,13 @@ public class MessageFilter {
                 return fieldValue;
             });
 
-    private static final Map<String, JexlExpression> EXPR_CACHE = new ConcurrentHashMap<>();
+    private static final int EXPR_CACHE_MAX_SIZE = 128;
+    private static final Map<String, JexlExpression> EXPR_CACHE = new LinkedHashMap<>(EXPR_CACHE_MAX_SIZE, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, JexlExpression> eldest) {
+            return size() > EXPR_CACHE_MAX_SIZE;
+        }
+    };
 
     private static final JexlEngine JEXL_ENGINE = new JexlBuilder()
             .strict(true)
@@ -121,7 +126,7 @@ public class MessageFilter {
             ))
             .create();
 
-    public static JexlExpression getExpression(String exprStr) {
+    public static synchronized JexlExpression getExpression(String exprStr) {
         return EXPR_CACHE.computeIfAbsent(exprStr, JEXL_ENGINE::createExpression);
     }
 

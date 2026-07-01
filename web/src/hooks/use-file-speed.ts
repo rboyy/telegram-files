@@ -78,6 +78,10 @@ export function useFileSpeed(file: TelegramFile) {
         };
       });
     }
+  }, [fileId, lastJsonMessage]);
+
+  useEffect(() => {
+    if (file.downloadStatus !== "downloading") return;
 
     const interval = setInterval(() => {
       setDownloadSpeed((prev) => ({
@@ -89,7 +93,7 @@ export function useFileSpeed(file: TelegramFile) {
     return () => {
       clearInterval(interval);
     };
-  }, [fileId, lastJsonMessage]);
+  }, [fileId, file.downloadStatus]);
 
   useEffect(() => {
     // Mock data

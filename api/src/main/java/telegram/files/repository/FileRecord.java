@@ -103,6 +103,12 @@ public record FileRecord(int id, //file id will change
             }),
             MapUtil.entry(new Version("0.2.4"), new String[]{
                     "ALTER TABLE file_record ADD COLUMN reaction_count BIGINT DEFAULT 0;",
+            }),
+            MapUtil.entry(new Version("0.3.1"), new String[]{
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_chat_id ON file_record (chat_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_telegram_id ON file_record (telegram_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_download_status ON file_record (download_status);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_type ON file_record (type);",
             })
     ));
 
