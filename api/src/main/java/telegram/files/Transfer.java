@@ -248,10 +248,14 @@ public abstract class Transfer {
                 name = "";
             }
 
-            return Path.of(destination,
-                    result.path,
-                    name
-            ).toString();
+            // Sanitize path to prevent directory traversal
+            Path destDir = Path.of(destination).normalize().toAbsolutePath();
+            Path resolvedPath = destDir.resolve(result.path).resolve(name).normalize().toAbsolutePath();
+            if (!resolvedPath.startsWith(destDir)) {
+                throw new SecurityException("AI classification result contains path traversal: " + result.path);
+            }
+
+            return resolvedPath.toString();
         }
 
     }

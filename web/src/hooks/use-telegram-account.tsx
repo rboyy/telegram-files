@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { TelegramAccount } from "@/lib/types";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
@@ -59,12 +59,12 @@ export const TelegramAccountProvider: React.FC<
     [accountId, accounts],
   );
 
-  const getAccounts = (status?: "active" | "inactive") => {
+  const getAccounts = useCallback((status?: "active" | "inactive") => {
     if (!status) return accounts ?? [];
     return accounts?.filter((a) => a.status === status) ?? [];
-  };
+  }, [accounts]);
 
-  const handleAccountChange = (newAccountId: string) => {
+  const handleAccountChange = useCallback((newAccountId: string) => {
     if (newAccountId === accountId && routerAccountId) {
       return;
     }
@@ -79,11 +79,11 @@ export const TelegramAccountProvider: React.FC<
       });
       router.push(`/accounts?id=${newAccountId}`);
     }
-  };
+  }, [accountId, routerAccountId, accounts, router, toast]);
 
-  const handleAccountReset = () => {
+  const handleAccountReset = useCallback(() => {
     void triggerChange({ accountId: "" }).then(() => setAccountId(undefined));
-  };
+  }, [triggerChange]);
 
   return (
     <TelegramAccountContext.Provider

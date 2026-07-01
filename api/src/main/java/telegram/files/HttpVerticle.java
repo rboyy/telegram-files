@@ -51,7 +51,7 @@ public class HttpVerticle extends AbstractVerticle {
     // session id -> telegram verticle
     private final Map<String, TelegramVerticle> sessionTelegramVerticles = new ConcurrentHashMap<>();
 
-    private final List<String> unboundClients = new ArrayList<>();
+    private final List<String> unboundClients = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private final FileRouteHandler fileRouteHandler = new FileRouteHandler();
 
@@ -281,6 +281,7 @@ public class HttpVerticle extends AbstractVerticle {
                     ws.closeHandler(_ -> {
                         clients.remove(sessionId);
                         sessionTelegramVerticles.remove(sessionId);
+                        unboundClients.remove(sessionId);
                         vertx.cancelTimer(timerId);
                         log.debug("WebSocket closed. SessionId: %s".formatted(sessionId));
                     });
@@ -841,7 +842,7 @@ public class HttpVerticle extends AbstractVerticle {
                         .flatMap(entry -> {
                             TelegramVerticle telegramVerticle = TelegramVerticles.getOrElseThrow(entry.getKey());
 
-                            return files.stream()
+                            return entry.getValue().stream()
                                     .map(f -> {
                                         JsonObject file = (JsonObject) f;
                                         return handler.apply(telegramVerticle, file);

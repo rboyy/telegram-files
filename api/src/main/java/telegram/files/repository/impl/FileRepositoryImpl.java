@@ -136,11 +136,16 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
             params.put("transferStatus", transferStatus);
         }
         if (CollUtil.isNotEmpty(tags)) {
-            String tagClause = tags.stream()
-                    .filter(StrUtil::isNotBlank)
-                    .map(tag -> "tags LIKE '%%" + tag + "%%'")
-                    .collect(Collectors.joining(" OR "));
-            whereClause += " AND (%s)".formatted(tagClause);
+            List<String> validTags = tags.stream().filter(StrUtil::isNotBlank).toList();
+            if (!validTags.isEmpty()) {
+                String tagClause = IntStream.range(0, validTags.size())
+                        .mapToObj(i -> "tags LIKE #{tag" + i + "}")
+                        .collect(Collectors.joining(" OR "));
+                whereClause += " AND (%s)".formatted(tagClause);
+                for (int i = 0; i < validTags.size(); i++) {
+                    params.put("tag" + i, "%%" + validTags.get(i) + "%%");
+                }
+            }
         }
         if (messageThreadId != 0) {
             whereClause += " AND message_thread_id = #{messageThreadId}";
@@ -179,8 +184,18 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
         String orderBy = "message_id DESC";
         boolean customSort = StrUtil.isNotBlank(sort) && StrUtil.isNotBlank(order);
         if (customSort) {
-            orderBy = "%s %s".formatted(sort, order);
-            if (Objects.equals(sort, "completion_date")) {
+            Set<String> allowedSortFields = Set.of("message_id", "date", "size", "file_name", "type",
+                    "download_status", "transfer_status", "completion_date", "reaction_count");
+            String sanitizedSort = sort.trim().toLowerCase();
+            String sanitizedOrder = order.trim().toLowerCase();
+            if (!allowedSortFields.contains(sanitizedSort)) {
+                sanitizedSort = "message_id";
+            }
+            if (!Objects.equals(sanitizedOrder, "asc") && !Objects.equals(sanitizedOrder, "desc")) {
+                sanitizedOrder = "desc";
+            }
+            orderBy = "%s %s".formatted(sanitizedSort, sanitizedOrder);
+            if (Objects.equals(sanitizedSort, "completion_date")) {
                 // For completion_date, we need to ensure the date is in milliseconds
                 whereClause += " AND completion_date IS NOT NULL";
             }
@@ -190,10 +205,10 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
             params.put("fromMessageId", fromMessageId);
             if (customSort) {
                 long fromSortField = Convert.toLong(filter.get("fromSortField"));
-                whereClause += " AND (%s %s %s OR (%s = %s AND message_id < #{fromMessageId}))".formatted(sort,
-                        Objects.equals(order, "asc") ? ">" : "<",
+                whereClause += " AND (%s %s %s OR (%s = %s AND message_id < #{fromMessageId}))".formatted(sanitizedSort,
+                        Objects.equals(sanitizedOrder, "asc") ? ">" : "<",
                         fromSortField,
-                        sort,
+                        sanitizedSort,
                         fromSortField);
             } else {
                 whereClause += " AND message_id < #{fromMessageId}";

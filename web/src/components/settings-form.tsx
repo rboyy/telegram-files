@@ -246,7 +246,7 @@ export default function SettingsForm() {
             <TagsInput
               maxTags={20}
               value={
-                (settings?.tags?.length ?? 0 > 0)
+                ((settings?.tags?.length ?? 0) > 0)
                   ? split(settings?.tags, ",")
                   : []
               }
