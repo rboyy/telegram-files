@@ -183,11 +183,13 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
         }
         String orderBy = "message_id DESC";
         boolean customSort = StrUtil.isNotBlank(sort) && StrUtil.isNotBlank(order);
+        String sanitizedSort = "message_id";
+        String sanitizedOrder = "desc";
         if (customSort) {
             Set<String> allowedSortFields = Set.of("message_id", "date", "size", "file_name", "type",
                     "download_status", "transfer_status", "completion_date", "reaction_count");
-            String sanitizedSort = sort.trim().toLowerCase();
-            String sanitizedOrder = order.trim().toLowerCase();
+            sanitizedSort = sort.trim().toLowerCase();
+            sanitizedOrder = order.trim().toLowerCase();
             if (!allowedSortFields.contains(sanitizedSort)) {
                 sanitizedSort = "message_id";
             }
