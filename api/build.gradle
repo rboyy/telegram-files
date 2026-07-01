@@ -100,9 +100,6 @@ shadowJar {
         )
     }
     mergeServiceFiles()
-    signing {
-        enabled = false
-    }
 }
 
 tasks.named('jar') {
