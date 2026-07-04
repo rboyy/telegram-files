@@ -147,7 +147,7 @@ public class DataVerticle extends AbstractVerticle {
     private Future<Boolean> isCompletelyNewInitializationForPostgres() {
         SqlClient sqlClient;
         String query;
-        String sanitizedDbName = Config.DB_NAME.replace("'", "''").replace("\"", "");
+        String sanitizedDbName = StrUtil.blankToDefault(Config.DB_NAME, "").replace("'", "''").replace("\"", "");
         if (Config.DB_NEED_CREATE) {
             query = """
                     SELECT 1 FROM pg_database WHERE datname = '%s'
@@ -188,7 +188,7 @@ public class DataVerticle extends AbstractVerticle {
     private Future<Boolean> isCompletelyNewInitializationForMySQL() {
         SqlClient sqlClient;
         String query;
-        String sanitizedDbName = Config.DB_NAME.replace("'", "''").replace("`", "").replace("\"", "");
+        String sanitizedDbName = StrUtil.blankToDefault(Config.DB_NAME, "").replace("'", "''").replace("`", "").replace("\"", "");
         if (Config.DB_NEED_CREATE) {
             query = """
                     SELECT SCHEMA_NAME
