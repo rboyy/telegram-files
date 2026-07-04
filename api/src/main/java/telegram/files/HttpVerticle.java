@@ -419,7 +419,6 @@ public class HttpVerticle extends AbstractVerticle {
 
         Map<String, String> filter = new HashMap<>();
         ctx.request().params().forEach(filter::put);
-        filter.put("search", URLUtil.decode(filter.get("search")));
 
         telegramVerticle.getChatFiles(Convert.toLong(chatId), filter)
                 .onSuccess(ctx::json)
