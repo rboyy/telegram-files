@@ -16,8 +16,8 @@ interface VersionData {
   version: string;
 }
 
-interface GitHubReleaseData {
-  tag_name: string;
+interface DockerHubTagsData {
+  results: Array<{ name: string; last_updated: string }>;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -27,11 +27,8 @@ export default function About() {
   const { data: apiData, error: apiError } = useSWR<VersionData, Error>(
     "/version",
   );
-  const { data: githubData, error: githubError } = useSWR<
-    GitHubReleaseData,
-    Error
-  >(
-    "https://api.github.com/repos/jarvis2f/telegram-files/releases/latest",
+  const { data: dockerData } = useSWR<DockerHubTagsData, Error>(
+    "https://hub.docker.com/v2/repositories/rboyy/telegram-files/tags/?page_size=10&ordering=last_updated",
     fetcher,
   );
 
@@ -41,8 +38,9 @@ export default function About() {
   };
 
   const currentVersion = apiData?.version ?? "未知";
-  const isNewVersionAvailable =
-    githubData && githubData.tag_name !== currentVersion;
+  const latestTag = dockerData?.results?.find(
+    (r) => r.name !== "latest" && !r.name.startsWith("sha-"),
+  );
 
   return (
     <div className="flex justify-center md:h-full md:items-center">
@@ -85,29 +83,21 @@ export default function About() {
 
             <div className="flex flex-col items-center justify-center">
               <p className="mb-1 text-sm font-medium text-white">
-                最新版本
+                Docker Hub 最新标签
               </p>
-              {githubError ? (
-                <p className="text-red-500">加载发布信息失败</p>
-              ) : !githubData ? (
+              {!dockerData ? (
                 <div className="flex items-center space-x-2">
                   <RefreshCw className="animate-spin text-white" size={16} />
                   <span>加载中...</span>
                 </div>
-              ) : (
+              ) : latestTag ? (
                 <p className="rounded bg-gray-100 px-3 dark:bg-gray-800">
-                  {githubData.tag_name}
+                  {latestTag.name}
                 </p>
+              ) : (
+                <p className="text-sm text-white/60">暂无版本标签</p>
               )}
             </div>
-
-            {isNewVersionAvailable && (
-              <div className="border-l-4 border-gray-700 bg-white px-4 py-2">
-                <p className="text-gray-800">
-                  有新版本 ({githubData?.tag_name}) 可用！请立即更新。
-                </p>
-              </div>
-            )}
 
             <div className="flex items-center justify-center space-x-2">
               <Link
