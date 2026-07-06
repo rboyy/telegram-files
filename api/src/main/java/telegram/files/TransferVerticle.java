@@ -12,29 +12,36 @@ import org.jooq.lambda.tuple.Tuple3;
 import telegram.files.repository.FileRecord;
 import telegram.files.repository.SettingAutoRecords;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransferVerticle extends AbstractVerticle {
     private static final Log log = LogFactory.get();
 
     private static final int HISTORY_SCAN_INTERVAL = 2 * 60 * 1000;
 
-    private static final int TRANSFER_INTERVAL = 3 * 1000;
+    /**
+     * Number of concurrent file transfers allowed.
+     * Multiple workers process the transfer queue in parallel to maximize throughput.
+     */
+    private static final int TRANSFER_CONCURRENCY = 3;
 
     private final SettingAutoRecords autoRecords;
 
-    private final Map<String, Transfer> transfers = new HashMap<>();
+    private final Map<String, Transfer> transfers = new ConcurrentHashMap<>();
 
     private final BlockingQueue<WaitingTransferFile> waitingTransferFiles = new LinkedBlockingQueue<>();
 
     private volatile boolean isStopped = false;
 
-    private volatile Transfer beingTransferred;
+    private final AtomicInteger activeTransfers = new AtomicInteger(0);
+
+    private final List<Thread> workerThreads = new CopyOnWriteArrayList<>();
 
     public TransferVerticle() {
         this.autoRecords = AutomationsHolder.INSTANCE.autoRecords();
@@ -48,14 +55,23 @@ public class TransferVerticle extends AbstractVerticle {
     public void start(Promise<Void> startPromise) {
         initEventConsumer().onSuccess(_ -> {
             vertx.setPeriodic(0, HISTORY_SCAN_INTERVAL, _ -> addHistoryFiles());
-            vertx.setPeriodic(0, TRANSFER_INTERVAL, _ -> startTransfer());
+
+            // Start worker threads that consume from the transfer queue.
+            // Each worker blocks on queue.take() until a file is available,
+            // then processes it immediately — no polling delay.
+            for (int i = 0; i < TRANSFER_CONCURRENCY; i++) {
+                Thread t = Thread.ofVirtual()
+                        .name("transfer-worker-" + i)
+                        .start(this::transferWorkerLoop);
+                workerThreads.add(t);
+            }
 
             log.info("""
                     Transfer verticle started!
                     |History scan interval: %s ms
-                    |Transfer interval: %s ms
+                    |Transfer concurrency: %d
                     |Auto chats: %s
-                    """.formatted(HISTORY_SCAN_INTERVAL, TRANSFER_INTERVAL, autoRecords.getTransferEnabledItems().size()));
+                    """.formatted(HISTORY_SCAN_INTERVAL, TRANSFER_CONCURRENCY, autoRecords.getTransferEnabledItems().size()));
 
             startPromise.complete();
         }).onFailure(startPromise::fail);
@@ -64,19 +80,68 @@ public class TransferVerticle extends AbstractVerticle {
     @Override
     public void stop(Promise<Void> stopPromise) {
         isStopped = true;
-        if (beingTransferred != null) {
-            log.info("Wait for transfer to complete, file: %s".formatted(beingTransferred.getTransferRecord().uniqueId()));
-            while (beingTransferred != null) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    log.error("Stop transfer verticle error: %s".formatted(e.getMessage()));
-                    stopPromise.fail(e);
-                }
-            }
+        // Interrupt workers so they exit the blocking queue.take()
+        workerThreads.forEach(Thread::interrupt);
+
+        int active = activeTransfers.get();
+        if (active > 0) {
+            log.info("Waiting for %d active transfer(s) to complete...".formatted(active));
         }
         log.info("Transfer verticle stopped");
         stopPromise.complete();
+    }
+
+    /**
+     * Worker loop: blocks on queue.take() and processes transfers immediately.
+     * Runs on virtual threads — blocking I/O and Future.await are safe.
+     */
+    private void transferWorkerLoop() {
+        while (!isStopped) {
+            try {
+                WaitingTransferFile waitingFile = waitingTransferFiles.take();
+                if (isStopped) break;
+                processTransfer(waitingFile);
+            } catch (InterruptedException e) {
+                if (isStopped) break;
+                Thread.currentThread().interrupt();
+                log.debug("Transfer worker interrupted");
+                break;
+            } catch (Exception e) {
+                log.error(e, "Transfer worker error");
+            }
+        }
+    }
+
+    private void processTransfer(WaitingTransferFile waitingFile) {
+        Transfer transfer = transfers.get("%d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
+        if (transfer == null) {
+            log.warn("Transfer not found for %d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
+            return;
+        }
+
+        FileRecord fileRecord = Future.await(DataVerticle.fileRepository.getByUniqueId(waitingFile.uniqueId()));
+        if (fileRecord == null) {
+            log.error("File not found: %s".formatted(waitingFile.uniqueId()));
+            return;
+        }
+
+        if (!fileRecord.isDownloadStatus(FileRecord.DownloadStatus.completed)
+            || StrUtil.isBlank(fileRecord.localPath())) {
+            log.warn("File {} is not downloaded yet", fileRecord.id());
+            return;
+        }
+        if (fileRecord.transferStatus() != null
+            && !fileRecord.isTransferStatus(FileRecord.TransferStatus.idle)) {
+            log.debug("File {} transfer status is not idle: {}", fileRecord.id(), fileRecord.transferStatus());
+            return;
+        }
+
+        activeTransfers.incrementAndGet();
+        try {
+            transfer.transfer(fileRecord);
+        } finally {
+            activeTransfers.decrementAndGet();
+        }
     }
 
     private Future<Void> initEventConsumer() {
@@ -126,6 +191,7 @@ public class TransferVerticle extends AbstractVerticle {
             return;
         }
         log.trace("Start scan history files for transfer");
+        int totalAdded = 0;
         for (SettingAutoRecords.Automation automation : autoRecords.automations) {
             if (!automation.transfer.enabled
                 || !automation.transfer.rule.transferHistory
@@ -156,9 +222,12 @@ public class TransferVerticle extends AbstractVerticle {
             }
 
             if (count > 0) {
-                log.info("Add history files to transfer queue: %s".formatted(count));
-                break;
+                totalAdded += count;
+                log.info("Add history files to transfer queue: %s (chat: %s)".formatted(count, automation.uniqueKey()));
             }
+        }
+        if (totalAdded > 0) {
+            log.info("Total history files added to transfer queue: %d".formatted(totalAdded));
         }
     }
 
@@ -181,79 +250,25 @@ public class TransferVerticle extends AbstractVerticle {
         }
 
         SettingAutoRecords.TransferRule transferRule = automation.transfer.rule;
+        String key = automation.uniqueKey();
 
-        if (transfers.containsKey(automation.uniqueKey())) {
-            Transfer transfer = transfers.get(automation.uniqueKey());
-            if (!transfer.isRuleUpdated(transferRule)) {
-                return transfer;
+        Transfer existing = transfers.get(key);
+        if (existing != null) {
+            if (!existing.isRuleUpdated(transferRule)) {
+                return existing;
             } else {
-                log.debug("Transfer rule updated: %s".formatted(automation.uniqueKey()));
-                transfers.remove(automation.uniqueKey());
+                log.debug("Transfer rule updated: %s".formatted(key));
+                transfers.remove(key);
             }
         }
 
-        return transfers.computeIfAbsent(automation.uniqueKey(), _ -> {
+        return transfers.computeIfAbsent(key, _ -> {
             Transfer transfer = Transfer.create(transferRule);
             transfer.setTelegramId(automation.telegramId);
             transfer.transferStatusUpdated = updated ->
                     updateTransferStatus(updated.fileRecord(), updated.transferStatus(), updated.localPath());
             return transfer;
         });
-    }
-
-    public void startTransfer() {
-        if (beingTransferred != null) {
-            return;
-        }
-        try {
-            WaitingTransferFile waitingTransferFile = waitingTransferFiles.poll(1, TimeUnit.SECONDS);
-            if (waitingTransferFile == null) {
-                log.trace("No file to transfer");
-                return;
-            }
-            Transfer transfer = transfers.get("%d:%d".formatted(waitingTransferFile.telegramId(), waitingTransferFile.chatId()));
-            if (transfer == null) {
-                return;
-            }
-            if (beingTransferred == transfer) {
-                waitingTransferFiles.add(waitingTransferFile);
-                log.debug("Transfer is busy: %s".formatted(waitingTransferFile.uniqueId));
-                return;
-            }
-            FileRecord fileRecord = Future.await(DataVerticle.fileRepository.getByUniqueId(waitingTransferFile.uniqueId));
-            if (fileRecord == null) {
-                log.error("File not found: %s".formatted(waitingTransferFile.uniqueId));
-                return;
-            }
-
-            startTransfer(fileRecord, transfer);
-        } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                log.debug("Transfer loop interrupted");
-            } else {
-                log.error(e, "Transfer error");
-            }
-        }
-    }
-
-    public void startTransfer(FileRecord fileRecord, Transfer transfer) {
-        if (isStopped) {
-            return;
-        }
-        if (!fileRecord.isDownloadStatus(FileRecord.DownloadStatus.completed)
-            || StrUtil.isBlank(fileRecord.localPath())) {
-            log.warn("File {} is not downloaded yet", fileRecord.id());
-            return;
-        }
-        if (fileRecord.transferStatus() != null
-            && !fileRecord.isTransferStatus(FileRecord.TransferStatus.idle)) {
-            log.debug("File {} transfer status is not idle: {}", fileRecord.id(), fileRecord.transferStatus());
-            return;
-        }
-
-        beingTransferred = transfer;
-        transfer.transfer(fileRecord);
-        beingTransferred = null;
     }
 
     private void updateTransferStatus(FileRecord fileRecord, FileRecord.TransferStatus transferStatus, String localPath) {
