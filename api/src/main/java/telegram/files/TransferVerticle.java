@@ -194,8 +194,7 @@ public class TransferVerticle extends AbstractVerticle {
         int totalAdded = 0;
         for (SettingAutoRecords.Automation automation : autoRecords.automations) {
             if (!automation.transfer.enabled
-                || !automation.transfer.rule.transferHistory
-                || automation.isComplete(SettingAutoRecords.HISTORY_TRANSFER_STATE)) {
+                || !automation.transfer.rule.transferHistory) {
                 continue;
             }
             Transfer transfer = getTransfer(automation);
@@ -204,13 +203,13 @@ public class TransferVerticle extends AbstractVerticle {
             }
             Tuple3<List<FileRecord>, Long, Long> filesTuple = Future.await(DataVerticle.fileRepository.getFiles(automation.chatId,
                     Map.of("downloadStatus", FileRecord.DownloadStatus.completed.name(),
-                            "transferStatus", FileRecord.TransferStatus.idle.name()
+                            "transferStatus", FileRecord.TransferStatus.idle.name(),
+                            "limit", "200"
                     )
             ));
             List<FileRecord> files = filesTuple.v1;
             if (CollUtil.isEmpty(files)) {
                 log.debug("No history files found for transfer: %s".formatted(automation.uniqueKey()));
-                automation.complete(SettingAutoRecords.HISTORY_TRANSFER_STATE);
                 continue;
             }
 
