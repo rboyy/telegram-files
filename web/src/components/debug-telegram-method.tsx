@@ -107,7 +107,7 @@ export default function DebugTelegramMethod() {
       setParameters(JSON.parse(value));
       setError("");
     } catch (e) {
-      setError("Invalid JSON format");
+      setError("JSON 格式无效");
     }
   };
 
@@ -119,7 +119,7 @@ export default function DebugTelegramMethod() {
       });
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An error occurred");
+      setError(e instanceof Error ? e.message : "发生错误");
     }
   };
 
@@ -129,17 +129,17 @@ export default function DebugTelegramMethod() {
   return (
     <Card className="no-scrollbar mx-auto h-full w-full overflow-y-scroll">
       <CardHeader>
-        <CardTitle>Telegram API Debug</CardTitle>
+        <CardTitle>Telegram API 调试</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Method Selection */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Method</label>
+            <label className="text-sm font-medium">方法</label>
             {isMethodsLoading && (
               <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Loading methods...
+                加载方法列表中...
               </div>
             )}
           </div>
@@ -152,14 +152,14 @@ export default function DebugTelegramMethod() {
                 className="w-full justify-between"
                 disabled={isLoading}
               >
-                {method ? method : "Select a method..."}
+                {method ? method : "选择方法..."}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" modal={true} align="start">
               <Command shouldFilter={false}>
                 <CommandInput
-                  placeholder="Search method..."
+                  placeholder="搜索方法..."
                   value={searchQuery}
                   onValueChange={setSearchQuery}
                 />
@@ -172,14 +172,14 @@ export default function DebugTelegramMethod() {
                     </CommandLoading>
                   )}
                   {!isMethodsLoading && filteredMethods.length === 0 && (
-                    <CommandEmpty>No methods found.</CommandEmpty>
+                    <CommandEmpty>未找到方法。</CommandEmpty>
                   )}
                   {!isMethodExecuting && searchQuery.length === 0 && (
                     <>
                       <CommandGroup>
                         <CommandItem disabled={true}>
                           <CircleAlert className="h-3 w-3" />
-                          Only the first 100 methods are shown.
+                          仅显示前 100 个方法。
                         </CommandItem>
                       </CommandGroup>
                       <CommandSeparator />
@@ -212,7 +212,7 @@ export default function DebugTelegramMethod() {
               target="_blank"
               className="text-xs text-blue-500 underline"
             >
-              {method} Documentation
+              {method} 文档
             </Link>
           )}
         </div>
@@ -220,18 +220,18 @@ export default function DebugTelegramMethod() {
         {/* Parameters Editor */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Parameters</label>
+            <label className="text-sm font-medium">参数</label>
             {isParametersLoading && (
               <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Loading parameters...
+                加载参数中...
               </div>
             )}
           </div>
           <Textarea
             value={parametersJson}
             onChange={(e) => handleParametersChange(e.target.value)}
-            placeholder="Enter parameters in JSON format"
+            placeholder="输入 JSON 格式的参数"
             className="h-48 font-mono text-sm"
             disabled={!method || isLoading}
           />
@@ -247,10 +247,10 @@ export default function DebugTelegramMethod() {
           {isDeMethodExecuting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Executing...
+              执行中...
             </>
           ) : (
-            "Execute Method"
+            "执行方法"
           )}
         </Button>
 
@@ -258,7 +258,7 @@ export default function DebugTelegramMethod() {
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">
-              Result
+              结果
               <span className="text-xs text-muted-foreground">
                 {lastMethodCode ? `(${lastMethodCode})` : ""}
               </span>
@@ -266,7 +266,7 @@ export default function DebugTelegramMethod() {
             {isMethodExecuting && (
               <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Processing...
+                处理中...
               </div>
             )}
           </div>
@@ -278,7 +278,7 @@ export default function DebugTelegramMethod() {
                   : ""
               }
               readOnly
-              placeholder="Method execution result will appear here"
+              placeholder="方法执行结果将显示在此处"
               className="h-48 font-mono text-sm"
             />
             <Button

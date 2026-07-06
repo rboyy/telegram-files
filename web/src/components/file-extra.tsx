@@ -151,7 +151,7 @@ function FileTime({ file }: FileExtraProps) {
         </TooltipTrigger>
         <TooltipContent>
           <div className="max-w-80 text-wrap rounded p-2">
-            {`Message received at ${new Date(file.date * 1000).toLocaleString()}`}
+            {`消息接收于 ${new Date(file.date * 1000).toLocaleString()}`}
           </div>
         </TooltipContent>
       </Tooltip>
@@ -169,7 +169,7 @@ function FileTime({ file }: FileExtraProps) {
           </TooltipTrigger>
           <TooltipContent>
             <div className="max-w-80 text-wrap rounded p-2">
-              {`File downloaded at ${new Date(file.completionDate).toLocaleString()}`}
+              {`文件下载于 ${new Date(file.completionDate).toLocaleString()}`}
             </div>
           </TooltipContent>
         </Tooltip>

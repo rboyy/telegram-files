@@ -17,7 +17,7 @@ export default function ThemeToggleButton() {
         onPressedChange={() =>
           setTheme((prev) => (prev === "dark" ? "light" : "dark"))
         }
-        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        aria-label={`切换到${theme === "dark" ? "浅色" : "深色"}模式`}
       >
         <Moon
           size={16}

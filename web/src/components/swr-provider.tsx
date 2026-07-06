@@ -27,11 +27,11 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
 
           toast({
             variant: "error",
-            title: "Request Failed",
+            title: "请求失败",
             description: (
               <div className="space-y-2">
                 <div className="line-clamp-2 break-all text-xs text-muted-foreground">
-                  <strong className="text-foreground">Key:</strong> {displayKey}
+                  <strong className="text-foreground">键：</strong> {displayKey}
                 </div>
                 <div className="line-clamp-3 text-wrap">{message}</div>
               </div>

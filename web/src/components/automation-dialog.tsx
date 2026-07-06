@@ -49,7 +49,7 @@ const DEFAULT_AUTO: Auto = {
 };
 
 export default function AutomationDialog() {
-  const { accountId } = useTelegramAccount();
+  const { account, accountId } = useTelegramAccount();
   const { isLoading, chat, reload } = useTelegramChat();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -92,9 +92,18 @@ export default function AutomationDialog() {
     if (chat?.auto) {
       setAuto(chat.auto);
     } else {
-      setAuto(DEFAULT_AUTO);
+      setAuto({
+        ...DEFAULT_AUTO,
+        transfer: {
+          ...DEFAULT_AUTO.transfer,
+          rule: {
+            ...DEFAULT_AUTO.transfer.rule,
+            destination: account?.rootPath || "",
+          },
+        },
+      });
     }
-  }, [chat]);
+  }, [chat, account]);
 
   if (isLoading) {
     return (

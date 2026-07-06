@@ -79,8 +79,8 @@ export default function Proxys({
           toast({
             variant: "success",
             description: innerProxyName
-              ? `Proxy is set to ${innerProxyName}`
-              : "Proxy is disabled",
+              ? `代理已设置为 ${innerProxyName}`
+              : "代理已禁用",
           });
         },
       },
@@ -122,7 +122,7 @@ export default function Proxys({
 
   // Delete proxy with confirmation
   const handleDeleteProxy = (proxy: Proxy): void => {
-    if (confirm(`Are you sure you want to delete the proxy ${proxy.name}?`)) {
+    if (confirm(`确定要删除代理 ${proxy.name} 吗？`)) {
       const updatedProxys = proxys.filter((p) => p.name !== proxy.name);
       void updateSettings({
         proxys: JSON.stringify({
@@ -164,16 +164,16 @@ export default function Proxys({
     <div className="relative h-full">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <h1 className="text-2xl font-bold">Proxys</h1>
+          <h1 className="text-2xl font-bold">代理</h1>
           {telegramId && <ProxyPing accountId={telegramId} />}
         </div>
         <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-5 w-5" /> Add Proxy
+          <Plus className="mr-2 h-5 w-5" /> 添加代理
         </Button>
       </div>
       {proxys.length === 0 && (
         <div className="flex h-32 items-center justify-center">
-          <p className="text-center text-gray-500">No proxys added yet</p>
+          <p className="text-center text-gray-500">尚未添加代理</p>
         </div>
       )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 2xl:grid-cols-4">
@@ -235,7 +235,7 @@ export default function Proxys({
               variant="outline"
               type="button"
             >
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button
@@ -243,7 +243,7 @@ export default function Proxys({
             disabled={isToggleProxyMutating}
             onClick={() => handleProxySubmit()}
           >
-            Submit
+            提交
           </Button>
         </div>
       )}
@@ -252,7 +252,7 @@ export default function Proxys({
           <DialogHeader>
             <DialogTitle>
               <span className="mr-2">
-                {editingProxy ? "Edit Proxy" : "Add Proxy"}
+                {editingProxy ? "编辑代理" : "添加代理"}
               </span>
               <ProxyParser onParsed={(proxy) => setFormState(proxy)} />
             </DialogTitle>
@@ -260,7 +260,7 @@ export default function Proxys({
           <div className="space-y-4">
             {/* Radio buttons for proxy type */}
             <div>
-              <Label className="mb-2 block">Type</Label>
+              <Label className="mb-2 block">类型</Label>
               <div className="flex space-x-4">
                 <label className="flex cursor-pointer items-center">
                   <input
@@ -316,80 +316,80 @@ export default function Proxys({
             </div>
 
             <div>
-              <Label className="mb-2 block">Name</Label>
+              <Label className="mb-2 block">名称</Label>
               <Input
                 name="name"
                 value={formState.name}
                 onChange={handleInputChange}
-                placeholder="Enter proxy name"
+                placeholder="输入代理名称"
               />
             </div>
             <div>
               <Label className="mb-2 block">
-                Proxy server address and port number
+                代理服务器地址和端口
               </Label>
               <div className="flex space-x-4">
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-gray-500">
-                    Server
+                    服务器
                   </label>
                   <Input
                     name="server"
                     value={formState.server}
                     onChange={handleInputChange}
-                    placeholder="Enter server address"
+                    placeholder="输入服务器地址"
                   />
                 </div>
                 <div className="w-24">
                   <label className="block text-xs font-medium text-gray-500">
-                    Port
+                    端口
                   </label>
                   <Input
                     name="port"
                     type="number"
                     value={formState.port}
                     onChange={handleInputChange}
-                    placeholder="Enter port number"
+                    placeholder="输入端口号"
                   />
                 </div>
               </div>
             </div>
-            <Label className="mb-2 block">Authentication (optional)</Label>
+            <Label className="mb-2 block">认证（可选）</Label>
             {formState.type === "mtproto" ? (
               <div>
                 <label className="block text-xs font-medium text-gray-500">
-                  Secret
+                  密钥
                 </label>
                 <Input
                   name="secret"
                   value={formState.secret}
                   onChange={handleInputChange}
-                  placeholder="Enter secret"
+                  placeholder="输入密钥"
                 />
               </div>
             ) : (
               <>
                 <div>
                   <label className="block text-xs font-medium text-gray-500">
-                    Username
+                    用户名
                   </label>
                   <Input
                     name="username"
                     value={formState.username}
                     onChange={handleInputChange}
-                    placeholder="Enter username"
+                    placeholder="输入用户名"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500">
-                    Password
+                    密码
                   </label>
                   <Input
                     name="password"
                     type="password"
                     value={formState.password}
                     onChange={handleInputChange}
-                    placeholder="Enter password"
+                    placeholder="输入密码"
                   />
                 </div>
               </>
@@ -397,10 +397,10 @@ export default function Proxys({
           </div>
           <DialogFooter>
             <Button onClick={handleCloseDialog} variant="outline">
-              Cancel
+              取消
             </Button>
             <Button onClick={handleSaveProxy}>
-              {editingProxy ? "Save" : "Add"}
+              {editingProxy ? "保存" : "添加"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -419,13 +419,13 @@ function ProxyParser({ onParsed }: { onParsed: (proxys: Proxy) => void }) {
     if (proxy) {
       toast({
         variant: "success",
-        description: "Proxy string is parsed successfully",
+        description: "代理字符串解析成功",
       });
       onParsed(proxy);
     } else {
       toast({
         variant: "error",
-        description: "Invalid proxy string format",
+        description: "无效的代理字符串格式",
       });
     }
   };
@@ -441,10 +441,10 @@ function ProxyParser({ onParsed }: { onParsed: (proxys: Proxy) => void }) {
         <TooltipContent>
           <div className="flex flex-col space-y-2 p-2">
             <p className="text-sm font-semibold">
-              Parse the proxy string from the clipboard and add them to the list
+              从剪贴板解析代理字符串并添加到列表
             </p>
             <p className="text-xs text-gray-500">
-              The proxy should be in the following format:
+              代理应使用以下格式：
               <br />
               <code>http://username:password@server:port</code>
               <br />

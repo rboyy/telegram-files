@@ -15,7 +15,7 @@ export default function AccountPage() {
               <TelegramIcon className="h-6 w-6" />
             </Link>
 
-            <h3 className="text-lg font-semibold">Telegram File Manager</h3>
+            <h3 className="text-lg font-semibold">Telegram 文件管理器</h3>
 
             <ThemeToggleButton />
           </div>

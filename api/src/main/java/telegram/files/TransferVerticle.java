@@ -37,6 +37,11 @@ public class TransferVerticle extends AbstractVerticle {
 
     private final BlockingQueue<WaitingTransferFile> waitingTransferFiles = new LinkedBlockingQueue<>();
 
+    /**
+     * O(1) dedup set to avoid scanning the queue with contains() which is O(n).
+     */
+    private final ConcurrentHashMap<String, Boolean> waitingTransferFileIds = new ConcurrentHashMap<>();
+
     private volatile boolean isStopped = false;
 
     private final AtomicInteger activeTransfers = new AtomicInteger(0);
@@ -47,6 +52,7 @@ public class TransferVerticle extends AbstractVerticle {
         this.autoRecords = AutomationsHolder.INSTANCE.autoRecords();
         AutomationsHolder.INSTANCE.registerOnRemoveListener(removedItems -> removedItems.forEach(item -> {
             waitingTransferFiles.removeIf(waitingTransferFile -> waitingTransferFile.uniqueId().equals(item.uniqueKey()));
+            waitingTransferFileIds.remove(item.uniqueKey());
             transfers.remove(item.uniqueKey());
         }));
     }
@@ -86,6 +92,20 @@ public class TransferVerticle extends AbstractVerticle {
         int active = activeTransfers.get();
         if (active > 0) {
             log.info("Waiting for %d active transfer(s) to complete...".formatted(active));
+            // Poll until all active transfers finish, with a 30-second timeout
+            long deadline = System.currentTimeMillis() + 30_000;
+            while (activeTransfers.get() > 0 && System.currentTimeMillis() < deadline) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            int remaining = activeTransfers.get();
+            if (remaining > 0) {
+                log.warn("Timed out waiting for %d active transfer(s), forcing stop".formatted(remaining));
+            }
         }
         log.info("Transfer verticle stopped");
         stopPromise.complete();
@@ -113,34 +133,38 @@ public class TransferVerticle extends AbstractVerticle {
     }
 
     private void processTransfer(WaitingTransferFile waitingFile) {
-        Transfer transfer = transfers.get("%d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
-        if (transfer == null) {
-            log.warn("Transfer not found for %d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
-            return;
-        }
-
-        FileRecord fileRecord = Future.await(DataVerticle.fileRepository.getByUniqueId(waitingFile.uniqueId()));
-        if (fileRecord == null) {
-            log.error("File not found: %s".formatted(waitingFile.uniqueId()));
-            return;
-        }
-
-        if (!fileRecord.isDownloadStatus(FileRecord.DownloadStatus.completed)
-            || StrUtil.isBlank(fileRecord.localPath())) {
-            log.warn("File {} is not downloaded yet", fileRecord.id());
-            return;
-        }
-        if (fileRecord.transferStatus() != null
-            && !fileRecord.isTransferStatus(FileRecord.TransferStatus.idle)) {
-            log.debug("File {} transfer status is not idle: {}", fileRecord.id(), fileRecord.transferStatus());
-            return;
-        }
-
-        activeTransfers.incrementAndGet();
         try {
-            transfer.transfer(fileRecord);
+            Transfer transfer = transfers.get("%d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
+            if (transfer == null) {
+                log.warn("Transfer not found for %d:%d".formatted(waitingFile.telegramId(), waitingFile.chatId()));
+                return;
+            }
+
+            FileRecord fileRecord = Future.await(DataVerticle.fileRepository.getByUniqueId(waitingFile.uniqueId()));
+            if (fileRecord == null) {
+                log.error("File not found: %s".formatted(waitingFile.uniqueId()));
+                return;
+            }
+
+            if (!fileRecord.isDownloadStatus(FileRecord.DownloadStatus.completed)
+                || StrUtil.isBlank(fileRecord.localPath())) {
+                log.warn("File {} is not downloaded yet", fileRecord.id());
+                return;
+            }
+            if (fileRecord.transferStatus() != null
+                && !fileRecord.isTransferStatus(FileRecord.TransferStatus.idle)) {
+                log.debug("File {} transfer status is not idle: {}", fileRecord.id(), fileRecord.transferStatus());
+                return;
+            }
+
+            activeTransfers.incrementAndGet();
+            try {
+                transfer.transfer(fileRecord);
+            } finally {
+                activeTransfers.decrementAndGet();
+            }
         } finally {
-            activeTransfers.decrementAndGet();
+            waitingTransferFileIds.remove(waitingFile.uniqueId());
         }
     }
 
@@ -235,12 +259,11 @@ public class TransferVerticle extends AbstractVerticle {
     }
 
     private boolean addWaitingTransferFile(long telegramId, long chatId, String uniqueId) {
-        WaitingTransferFile waitingTransferFile = new WaitingTransferFile(telegramId, chatId, uniqueId);
-        if (!waitingTransferFiles.contains(waitingTransferFile)) {
-            waitingTransferFiles.add(waitingTransferFile);
-            return true;
+        if (waitingTransferFileIds.putIfAbsent(uniqueId, Boolean.TRUE) != null) {
+            return false; // already in queue
         }
-        return false;
+        waitingTransferFiles.add(new WaitingTransferFile(telegramId, chatId, uniqueId));
+        return true;
     }
 
     private Transfer getTransfer(SettingAutoRecords.Automation automation) {
@@ -251,17 +274,13 @@ public class TransferVerticle extends AbstractVerticle {
         SettingAutoRecords.TransferRule transferRule = automation.transfer.rule;
         String key = automation.uniqueKey();
 
-        Transfer existing = transfers.get(key);
-        if (existing != null) {
-            if (!existing.isRuleUpdated(transferRule)) {
+        return transfers.compute(key, (k, existing) -> {
+            if (existing != null && !existing.isRuleUpdated(transferRule)) {
                 return existing;
-            } else {
-                log.debug("Transfer rule updated: %s".formatted(key));
-                transfers.remove(key);
             }
-        }
-
-        return transfers.computeIfAbsent(key, _ -> {
+            if (existing != null) {
+                log.debug("Transfer rule updated: %s".formatted(key));
+            }
             Transfer transfer = Transfer.create(transferRule);
             transfer.setTelegramId(automation.telegramId);
             transfer.transferStatusUpdated = updated ->

@@ -81,7 +81,7 @@ export function MobileHeader() {
               <Download className="h-4 w-4 flex-shrink-0" />
             </div>
           ) : (
-            <h3 className="text-lg font-semibold">Telegram File Manager</h3>
+            <h3 className="text-lg font-semibold">Telegram 文件管理器</h3>
           )}
 
           <MenuDrawer />
@@ -122,7 +122,7 @@ function MenuDrawer() {
         >
           <div className="flex h-full w-full grow flex-col rounded-[16px] bg-white p-4 shadow-lg dark:bg-zinc-900">
             <DrawerTitle className="mb-6 text-center">
-              Telegram Files Manager
+              Telegram 文件管理器
             </DrawerTitle>
             <div className="flex h-full flex-col justify-between">
               <div className="flex flex-1 flex-col gap-4">
@@ -132,7 +132,7 @@ function MenuDrawer() {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col">
                   <Label className="text-xs font-semibold text-muted-foreground">
-                    Auto Download
+                    自动下载
                   </Label>
                   <div className="py-2">
                     {chat ? (
@@ -143,14 +143,14 @@ function MenuDrawer() {
                         className="w-full"
                         disabled={true}
                       >
-                        No chat selected
+                        未选择聊天
                       </Button>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-col">
                   <Label className="text-xs font-semibold text-muted-foreground">
-                    Layout
+                    布局
                   </Label>
                   <div className="py-2">
                     <Toggle
@@ -163,12 +163,12 @@ function MenuDrawer() {
                       {layout === "detailed" ? (
                         <>
                           <List className="h-4 w-4" />
-                          <span className="">Detailed Layout</span>
+                          <span className="">详细布局</span>
                         </>
                       ) : (
                         <>
                           <GalleryHorizontal className="h-4 w-4" />
-                          <span className="">Gallery Layout</span>
+                          <span className="">画廊布局</span>
                         </>
                       )}
                     </Toggle>

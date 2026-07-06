@@ -65,7 +65,7 @@ export default function ChatSelect({ disabled }: { disabled: boolean }) {
               </span>
             </div>
           ) : (
-            "Select chat ..."
+            "选择聊天..."
           )}
           <ChevronsUpDown className="opacity-50" />
         </Button>
@@ -74,7 +74,7 @@ export default function ChatSelect({ disabled }: { disabled: boolean }) {
         <Command shouldFilter={false}>
           <div className="flex w-full border-b">
             <TooltipWrapper
-              content={archived ? "Show main chats" : "Show archived chats"}
+              content={archived ? "显示主要聊天" : "显示已归档聊天"}
             >
               <Toggle
                 className="h-9 rounded-none border-r"
@@ -90,7 +90,7 @@ export default function ChatSelect({ disabled }: { disabled: boolean }) {
             </TooltipWrapper>
             <div className="flex-1">
               <CommandInput
-                placeholder="Search chat..."
+                placeholder="搜索聊天..."
                 className="h-9"
                 value={search}
                 onValueChange={setSearch}
@@ -106,7 +106,7 @@ export default function ChatSelect({ disabled }: { disabled: boolean }) {
               </CommandLoading>
             )}
             <CommandEmpty>
-              {!isLoading && chats.length === 0 && "No chat found."}
+              {!isLoading && chats.length === 0 && "未找到聊天。"}
             </CommandEmpty>
             <CommandGroup>
               {chats.map((chat) => (
@@ -143,7 +143,7 @@ export default function ChatSelect({ disabled }: { disabled: boolean }) {
                         {(chat.name ?? "").length > 0 ? chat.name : chat.id}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {chat.type} • {chat.unreadCount ?? 0} unread
+                        {chat.type} • {chat.unreadCount ?? 0} 未读
                       </span>
                     </div>
                   </div>

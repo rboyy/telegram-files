@@ -152,7 +152,7 @@ export default function FileViewer({
                 }}
               >
                 <VisuallyHidden>
-                  <DialogTitle>File Viewer</DialogTitle>
+                  <DialogTitle>文件预览</DialogTitle>
                 </VisuallyHidden>
                 {file.type === "video" &&
                 file.downloadStatus === "completed" ? (

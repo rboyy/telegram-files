@@ -52,7 +52,7 @@ public class AutomationsHolder {
                 .mapEmpty();
     }
 
-    public void onAutoRecordsUpdate(SettingAutoRecords records) {
+    public synchronized void onAutoRecordsUpdate(SettingAutoRecords records) {
         for (SettingAutoRecords.Automation automation : records.automations) {
             if (!AUTO_RECORDS.exists(automation.telegramId, automation.chatId)) {
                 // new enabled

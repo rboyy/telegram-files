@@ -171,7 +171,7 @@ export default function FileList({ accountId, chatId, link }: FileListProps) {
                       style={{ strokeWidth: "0.8px" }}
                     />
                   ) : (
-                    <p className="text-muted-foreground">No more files</p>
+                    <p className="text-muted-foreground">没有更多文件</p>
                   )}
                 </div>
               );

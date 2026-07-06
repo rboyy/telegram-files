@@ -109,6 +109,13 @@ public record FileRecord(int id, //file id will change
                     "CREATE INDEX IF NOT EXISTS idx_file_record_telegram_id ON file_record (telegram_id);",
                     "CREATE INDEX IF NOT EXISTS idx_file_record_download_status ON file_record (download_status);",
                     "CREATE INDEX IF NOT EXISTS idx_file_record_type ON file_record (type);",
+            }),
+            MapUtil.entry(new Version("0.3.2"), new String[]{
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_unique_id ON file_record (unique_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_chat_download ON file_record (chat_id, download_status, type);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_completion ON file_record (completion_date);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_media_album ON file_record (media_album_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_file_record_thread ON file_record (thread_chat_id, message_thread_id);",
             })
     ));
 

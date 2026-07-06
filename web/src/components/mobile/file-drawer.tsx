@@ -130,7 +130,7 @@ export default function FileDrawer({
         aria-describedby={undefined}
       >
         <VisuallyHidden>
-          <DrawerTitle>File Details</DrawerTitle>
+          <DrawerTitle>文件详情</DrawerTitle>
         </VisuallyHidden>
         {isLoading && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center">
