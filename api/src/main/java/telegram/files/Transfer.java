@@ -121,6 +121,15 @@ public abstract class Transfer {
                 }
             }
 
+            // Ensure parent directory exists
+            FileUtil.mkdir(Path.of(transferPath).getParent());
+
+            // When overwriting an existing file, delete it first to prevent
+            // Hutool's FileUtil.move from treating the target as a directory
+            if (isOverwrite && FileUtil.exist(transferPath)) {
+                FileUtil.del(transferPath);
+            }
+
             FileUtil.move(Path.of(fileRecord.localPath()), Path.of(transferPath), isOverwrite);
             log.info("Transfer file {} to {}, duplication policy: {} overwrite: {}", fileRecord.id(), transferPath, duplicationPolicy, isOverwrite);
 
