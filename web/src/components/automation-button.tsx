@@ -38,10 +38,10 @@ const AutomationButton = React.forwardRef<
             {...props}
           >
             <span className="inline-block translate-x-1 transition-all duration-300 group-hover:translate-x-12 group-hover:opacity-0">
-              {autoEnabled ? "Running" : "Stopped"}
+              {autoEnabled ? "运行中" : "已停止"}
             </span>
             <div className="absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 text-primary-foreground opacity-0 transition-all duration-300 group-hover:-translate-x-1 group-hover:opacity-100">
-              <span>{autoEnabled ? "Disable" : "Enable"}</span>
+              <span>{autoEnabled ? "禁用" : "启用"}</span>
               <ArrowRight />
             </div>
             <div
@@ -60,8 +60,8 @@ const AutomationButton = React.forwardRef<
         </TooltipTrigger>
         <TooltipContent>
           {autoEnabled
-            ? "Automation is enabled, you can disable it by clicking the button"
-            : "Automation is disabled, you can enable it by clicking the button"}
+            ? "自动化已启用，点击按钮可禁用"
+            : "自动化已禁用，点击按钮可启用"}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -36,8 +36,8 @@ export default function About() {
   );
 
   const projectInfo = {
-    repository: "https://github.com/jarvis2f/telegram-files",
-    author: "Jarvis2f",
+    repository: "https://github.com/rboyy/telegram-files",
+    author: "rboyy",
   };
 
   const currentVersion = apiData?.version ?? "未知";
@@ -118,6 +118,9 @@ export default function About() {
                 <Github className="h-6 w-6" />
               </Link>
             </div>
+            <p className="text-center text-xs text-white/70">
+              基于 Jarvis2f 原版优化修改
+            </p>
           </div>
         </CardContent>
       </Card>

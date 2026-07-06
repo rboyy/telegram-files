@@ -66,7 +66,7 @@ function useBatchUpdateTags({
         onTagsUpdate?.(tags);
         toast({
           variant: "success",
-          description: "Tags updated successfully",
+          description: "标签更新成功",
         });
       },
     },
@@ -119,7 +119,7 @@ function useUpdateTags({
         onTagsUpdate?.(tags);
         toast({
           variant: "success",
-          description: "Tags updated successfully",
+          description: "标签更新成功",
         });
       },
     },
@@ -276,7 +276,7 @@ export function MobileFileTagsDrawer({
         <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
 
         <div className="p-4">
-          <DrawerTitle className="mb-4">Edit Tags</DrawerTitle>
+          <DrawerTitle className="mb-4">编辑标签</DrawerTitle>
           <TagsSelector
             value={tags}
             onChangeAction={setTags}
@@ -294,11 +294,11 @@ export function MobileFileTagsDrawer({
             {isMutating ? (
               <LoaderIcon className="h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
             ) : (
-              "Submit"
+              "提交"
             )}
           </Button>
           <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">关闭</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
@@ -335,15 +335,14 @@ export function BatchFileTags({ files, onTagsUpdate }: BatchFileTagsProps) {
       <DialogTrigger asChild>
         <Button size="sm">
           <Tag className="mr-2 h-4 w-4" />
-          Edit Tags
+          编辑标签
           {`(${files.length})`}
         </Button>
       </DialogTrigger>
       <DialogContent className="w-full max-w-md">
-        <DialogTitle>Edit Tags</DialogTitle>
+        <DialogTitle>编辑标签</DialogTitle>
         <DialogDescription>
-          {`You can edit tags for ${files.length} files at once. This will update the
-            tags for all selected files.`}
+          {`你可以同时编辑 ${files.length} 个文件的标签。这将更新所有选中文件的标签。`}
         </DialogDescription>
         <TagsSelector
           value={tags}
@@ -352,13 +351,13 @@ export function BatchFileTags({ files, onTagsUpdate }: BatchFileTagsProps) {
         />
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">关闭</Button>
           </DialogClose>
           <Button onClick={() => toggleUpdateTags()}>
             {isMutating ? (
               <LoaderIcon className="h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
             ) : (
-              "Submit"
+              "提交"
             )}
           </Button>
         </DialogFooter>

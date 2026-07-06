@@ -31,10 +31,10 @@ export default function ProxyPing({ accountId }: { accountId: string }) {
             <ChevronsLeftRightEllipsis className="h-4 w-4 text-gray-500" />
             {isLoading && (
               <div className="h-6 w-14 animate-pulse rounded bg-gray-200 dark:bg-gray-700">
-                testing
+                测试中
               </div>
             )}
-            {!isLoading && error && <span>Failed</span>}
+            {!isLoading && error && <span>失败</span>}
             {!isLoading && data && (
               <div className="flex h-6 items-center space-x-2">
                 <span className="text-sm">
@@ -45,7 +45,7 @@ export default function ProxyPing({ accountId }: { accountId: string }) {
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          Current latency for accessing telegram API
+          访问 Telegram API 的当前延迟
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -74,7 +74,7 @@ export default function ProxysDialog({
         aria-describedby={undefined}
       >
         <VisuallyHidden>
-          <DialogTitle>Proxys</DialogTitle>
+          <DialogTitle>代理</DialogTitle>
         </VisuallyHidden>
         <div className="mt-3">
           <Proxys telegramId={telegramId} {...proxyProps} />

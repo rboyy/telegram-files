@@ -23,7 +23,7 @@ export default function AccountSelect({
   return (
     <Select value={accountId} onValueChange={handleAccountChange}>
       <SelectTrigger className="w-full md:w-[200px]">
-        <SelectValue placeholder="Select account ...">
+        <SelectValue placeholder="选择账户...">
           {account ? (
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
@@ -35,7 +35,7 @@ export default function AccountSelect({
               </span>
             </div>
           ) : (
-            `Select account ...`
+            `选择账户...`
           )}
         </SelectValue>
       </SelectTrigger>

@@ -39,17 +39,17 @@ export default function ParseLinkButton({ accountId }: ParseLinkButtonProps) {
       const match = telegramLinkRegex.exec(text);
       if (!match) {
         toast({
-          title: "Invalid link",
+          title: "无效链接",
           description:
-            "Please copy a valid Telegram link. Example: https://t.me/username",
+            "请复制有效的 Telegram 链接。示例：https://t.me/username",
           variant: "error",
         });
         return;
       }
       setOpen(false); // Close the drawer if it was open
       toast({
-        title: "Parsing link...",
-        description: `Parsing link: ${text}`,
+        title: "解析链接中...",
+        description: `解析链接：${text}`,
         variant: "success",
       });
       // Redirect to the account page with the parsed link
@@ -58,8 +58,8 @@ export default function ParseLinkButton({ accountId }: ParseLinkButtonProps) {
       );
     } else {
       toast({
-        title: "No link found in clipboard",
-        description: "Please copy a Telegram link to parse.",
+        title: "剪贴板中未找到链接",
+        description: "请复制一个 Telegram 链接进行解析。",
         variant: "info",
       });
     }
@@ -96,10 +96,10 @@ export default function ParseLinkButton({ accountId }: ParseLinkButtonProps) {
           toggleParseLink={parseLink}
         />
       )}
-      <TooltipWrapper content="You can parse links from Telegram chats to get files directly.">
+      <TooltipWrapper content="你可以解析 Telegram 聊天中的链接直接获取文件。">
         <Button className="mt-4" onClick={handleParseLink}>
           <WandSparkles className="mr-2 h-4 w-4" />
-          Parse Link
+          解析链接
         </Button>
       </TooltipWrapper>
     </>
@@ -121,15 +121,15 @@ function ParseLinkDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full md:w-2/3">
         <DialogHeader>
-          <DialogTitle>Parse Link</DialogTitle>
+          <DialogTitle>解析链接</DialogTitle>
           <DialogDescription>
-            Enter a Telegram link to parse files from it. Example:{" "}
+            输入 Telegram 链接以解析文件。示例：{" "}
             <code>https://t.me/username</code>
           </DialogDescription>
         </DialogHeader>
 
         <Input
-          placeholder="Enter Telegram link"
+          placeholder="输入 Telegram 链接"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           className="mb-4"
@@ -143,10 +143,10 @@ function ParseLinkDialog({
               toggleParseLink(link);
             }}
           >
-            Submit
+            提交
           </Button>
           <DialogClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">关闭</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -175,13 +175,13 @@ function MobileParseLinkDrawer({
         <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
 
         <div className="p-4">
-          <DrawerTitle className="mb-4">Parse Link</DrawerTitle>
+          <DrawerTitle className="mb-4">解析链接</DrawerTitle>
           <p className="mb-2 text-sm text-muted-foreground">
-            Enter a Telegram link to parse files from it. Example:{" "}
+            输入 Telegram 链接以解析文件。示例：{" "}
             <code>https://t.me/username</code>
           </p>
           <Input
-            placeholder="Enter Telegram link"
+            placeholder="输入 Telegram 链接"
             value={link}
             onChange={(e) => setLink(e.target.value)}
             className="mb-4"
@@ -196,10 +196,10 @@ function MobileParseLinkDrawer({
               toggleParseLink(link);
             }}
           >
-            Submit
+            提交
           </Button>
           <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">关闭</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

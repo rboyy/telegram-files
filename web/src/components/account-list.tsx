@@ -57,7 +57,7 @@ export function AccountList({ accounts, onSelectAccount }: AccountListProps) {
                 {account.status === "inactive" && (
                   <AccountDialog>
                     <Button variant="outline" size="sm">
-                      Activate
+                      激活
                     </Button>
                   </AccountDialog>
                 )}

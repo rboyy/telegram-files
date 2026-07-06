@@ -32,7 +32,7 @@ export default function AccountPage() {
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
           <EmptyState
             hasAccounts={true}
-            message="Select a chat to view files"
+            message="选择一个聊天以查看文件"
           />
           {accountId && <ParseLinkButton accountId={accountId} />}
         </div>

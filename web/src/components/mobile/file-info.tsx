@@ -95,7 +95,7 @@ export default function FileInfo({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Type className="h-4 w-4" />
-                  <span>Type</span>
+                  <span>类型</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {file.type}
@@ -105,7 +105,7 @@ export default function FileInfo({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <HardDrive className="h-4 w-4" />
-                  <span>Size</span>
+                  <span>大小</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {prettyBytes(file.size)}
@@ -115,7 +115,7 @@ export default function FileInfo({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Received At</span>
+                  <span>接收时间</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {formatDistanceToNow(new Date(file.date * 1000), {
@@ -127,7 +127,7 @@ export default function FileInfo({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Download className="h-4 w-4" />
-                  <span>Downloaded Size</span>
+                  <span>已下载大小</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {prettyBytes(file.downloadedSize)}
@@ -138,7 +138,7 @@ export default function FileInfo({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock10 className="h-4 w-4" />
-                    <span>Download At</span>
+                    <span>下载时间</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">
                     {formatDistanceToNow(new Date(file.startDate), {
@@ -152,7 +152,7 @@ export default function FileInfo({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <ClockArrowDown className="h-4 w-4" />
-                    <span>Completion At</span>
+                    <span>完成时间</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">
                     {formatDistanceToNow(new Date(file.completionDate), {
@@ -171,7 +171,7 @@ export default function FileInfo({
           (file.type === "video" || file.type === "photo") && (
             <Button className="w-full" onClick={onView}>
               <View className="h-4 w-4" />
-              <span>View</span>
+              <span>查看</span>
             </Button>
           )}
         <MobileFileControl file={file} />

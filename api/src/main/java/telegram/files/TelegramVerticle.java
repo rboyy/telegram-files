@@ -201,7 +201,13 @@ public class TelegramVerticle extends AbstractVerticle {
         }
     }
 
+    private static final int MAX_IDLE_CHAT_FILES_SCAN_DEPTH = 10;
+
     private Future<TdApi.FoundChatMessages> getIdleChatFiles(TdApi.SearchChatMessages searchChatMessages, int seq) {
+        if (seq >= MAX_IDLE_CHAT_FILES_SCAN_DEPTH) {
+            log.warn("Reached max scan depth (%d) for idle chat files, stopping".formatted(MAX_IDLE_CHAT_FILES_SCAN_DEPTH));
+            return Future.succeededFuture(new TdApi.FoundChatMessages(0, new TdApi.Message[0], 0));
+        }
         if (seq != 0) {
             // Increase the limit and reduce the number of requests
             searchChatMessages.limit = 100;

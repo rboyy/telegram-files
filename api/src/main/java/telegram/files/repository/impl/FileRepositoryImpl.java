@@ -666,21 +666,15 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
         if (fileId <= 0 || StrUtil.isBlank(uniqueId)) {
             return Future.succeededFuture();
         }
-        return this.getByUniqueId(uniqueId)
-                .compose(record -> {
-                    if (record == null || record.id() == fileId) {
-                        return Future.succeededFuture();
-                    }
-                    return SqlTemplate
-                            .forUpdate(sqlClient, """
-                                    UPDATE file_record SET id = #{fileId} WHERE unique_id = #{uniqueId}
-                                    """)
-                            .execute(Map.of("fileId", fileId, "uniqueId", uniqueId))
-                            .onFailure(err ->
-                                    log.error("Failed to update file record: %s".formatted(err.getMessage()))
-                            )
-                            .mapEmpty();
-                });
+        return SqlTemplate
+                .forUpdate(sqlClient, """
+                        UPDATE file_record SET id = #{fileId} WHERE unique_id = #{uniqueId} AND id != #{fileId}
+                        """)
+                .execute(Map.of("fileId", fileId, "uniqueId", uniqueId))
+                .onFailure(err ->
+                        log.error("Failed to update file record: %s".formatted(err.getMessage()))
+                )
+                .mapEmpty();
     }
 
     @Override
@@ -778,28 +772,17 @@ public class FileRepositoryImpl extends AbstractSqlRepository implements FileRep
     @Override
     public Future<Integer> deleteAllCompletedFiles() {
         return SqlTemplate
-                .forQuery(sqlClient, """
-                        SELECT * FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
+                .forUpdate(sqlClient, """
+                        DELETE FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
                         """)
-                .mapTo(FileRecord.ROW_MAPPER)
                 .execute(Map.of())
-                .compose(files -> {
-                    List<FileRecord> fileList = IterUtil.toList(files);
-                    if (CollUtil.isEmpty(fileList)) {
-                        return Future.succeededFuture(0);
+                .map(result -> {
+                    int count = result.rowCount();
+                    if (count > 0) {
+                        log.info("Successfully deleted %d completed files from database".formatted(count));
                     }
-                    
-                    // Delete files from database
-                    return SqlTemplate
-                            .forUpdate(sqlClient, """
-                                    DELETE FROM file_record WHERE download_status = 'completed' AND type != 'thumbnail'
-                                    """)
-                            .execute(Map.of())
-                            .map(result -> {
-                                // Return deleted file records for file system cleanup
-                                return fileList.size();
-                            })
-                            .onSuccess(count -> log.info("Successfully deleted %d completed files from database".formatted(count)));
-                });
+                    return count;
+                })
+                .onFailure(err -> log.error("Failed to delete completed files: %s".formatted(err.getMessage())));
     }
 }
