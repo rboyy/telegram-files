@@ -89,7 +89,7 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
           </CardTitle>
           {bootstrapMode && (
             <CardDescription className="text-center">
-              请使用本地 API 进程打印的一次性验证码。首位管理员可以在本机回环地址或同一私有局域网内创建。
+              请使用本地 API 进程打印的一次性引导码。引导码在 15 分钟内有效，首位管理员只能在本机或同一内网创建。
             </CardDescription>
           )}
         </CardHeader>
