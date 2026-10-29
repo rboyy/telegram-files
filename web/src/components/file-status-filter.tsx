@@ -86,14 +86,14 @@ export default function FileStatusFilter({
       <div className="flex items-center space-x-2">
         {downloadStatus && (
           <div className="flex items-center space-x-1 rounded bg-gray-100 p-1 dark:bg-gray-800">
-            <span className="text-xs">下载</span>
             <downloadStatus.icon className="h-3 w-3" />
+            <span className="text-xs">{downloadStatus.text}</span>
           </div>
         )}
         {transferStatus && (
           <div className="flex items-center space-x-1 rounded bg-gray-100 p-1 dark:bg-gray-800">
-            <span className="text-xs">转移</span>
             <transferStatus.icon className="h-3 w-3" />
+            <span className="text-xs">{transferStatus.text}</span>
           </div>
         )}
       </div>

@@ -106,8 +106,8 @@ export default function DebugTelegramMethod() {
     try {
       setParameters(JSON.parse(value));
       setError("");
-    } catch (e) {
-      setError("JSON 格式无效");
+    } catch (error) {
+      setError("JSON 格式无效" + (error instanceof Error ? `: ${error.message}` : ""));
     }
   };
 

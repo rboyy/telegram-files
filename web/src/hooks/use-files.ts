@@ -10,7 +10,7 @@ import useSWRInfinite from "swr/infinite";
 import { useWebsocket } from "@/hooks/use-websocket";
 import { WebSocketMessageType } from "@/lib/websocket-types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { useDebounce } from "use-debounce";
+import { useDebounce, useDebouncedCallback } from "use-debounce";
 
 const DEFAULT_FILTERS: FileFilter = {
   search: "",
@@ -18,6 +18,7 @@ const DEFAULT_FILTERS: FileFilter = {
   downloadStatus: undefined,
   transferStatus: undefined,
   offline: false,
+  seedOnly: false,
   tags: [],
 };
 
@@ -25,6 +26,8 @@ type FileResponse = {
   files: TelegramFile[];
   count: number;
   nextFromMessageId: number;
+  nextSeedOffset?: number;
+  hasMore?: boolean;
 };
 
 type FileStatusUpdate = {
@@ -35,6 +38,19 @@ type FileStatusUpdate = {
   downloadedSize: number;
   transferStatus?: TransferStatus;
   thumbnailFile?: Thumbnail;
+  torrentStatus?: string;
+  sharedByMe?: boolean;
+  shareStatus?: TelegramFile["shareStatus"];
+  sharedSourceId?: string;
+  sharedResourceId?: string;
+  shareTitle?: string;
+  shareDescription?: string | null;
+  shareTags?: string[];
+  shareCategory?: string | null;
+  shareAccessScope?: TelegramFile["shareAccessScope"];
+  sharePublicMessageUrl?: string | null;
+  shareErrorCode?: string;
+  tags?: string;
   removed?: boolean;
 };
 
@@ -65,6 +81,7 @@ export function useFiles(
       ...(filters.downloadStatus && { downloadStatus: filters.downloadStatus }),
       ...(filters.transferStatus && { transferStatus: filters.transferStatus }),
       ...(filters.offline && { offline: "true" }),
+      ...(noAccountSpecified && filters.seedOnly && { seedOnly: "true" }),
       ...(filters.tags.length > 0 && {
         tags: filters.tags.join(","),
       }),
@@ -86,7 +103,17 @@ export function useFiles(
       return null;
     }
 
-    params.set("fromMessageId", previousPageData.nextFromMessageId.toString());
+    if (noAccountSpecified && filters.seedOnly) {
+      params.set(
+        "seedOffset",
+        (previousPageData.nextSeedOffset ?? 0).toString(),
+      );
+    } else {
+      params.set(
+        "fromMessageId",
+        previousPageData.nextFromMessageId.toString(),
+      );
+    }
     if (filters.offline && previousPageData.files.length > 0) {
       const lastFile =
         previousPageData.files[previousPageData.files.length - 1];
@@ -116,10 +143,23 @@ export function useFiles(
     keepPreviousData: true,
   });
 
+  // Read by updateField's callbacks only; kept in a ref so that writing a status update does not
+  // force every consumer of this hook to re-render.
+  const pagesRef = useRef(pages);
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
+
   const [debounceLoading] = useDebounce(isLoading || isValidating, 500, {
     leading: true,
     maxWait: 1000,
   });
+
+  // A thumbnail finished downloading in the background; refetch so the list picks up the
+  // crisp thumbnailFile. Debounced to coalesce the bursts that happen while browsing.
+  const debouncedThumbnailRefetch = useDebouncedCallback(() => {
+    void mutate();
+  }, 1500);
 
   useEffect(() => {
     if (lastJsonMessage?.type !== WebSocketMessageType.FILE_STATUS) {
@@ -134,9 +174,28 @@ export function useFiles(
       downloadedSize: number;
       transferStatus?: TransferStatus;
       thumbnailFile?: Thumbnail;
+      torrentStatus?: string;
       removed?: boolean;
+      type?: string;
+      sharedByMe?: boolean;
+      shareStatus?: TelegramFile["shareStatus"];
+      sharedSourceId?: string;
+      sharedResourceId?: string;
+      shareTitle?: string;
+      shareDescription?: string | null;
+      shareTags?: string[];
+      shareCategory?: string | null;
+      shareAccessScope?: TelegramFile["shareAccessScope"];
+      sharePublicMessageUrl?: string | null;
+      shareErrorCode?: string;
     };
 
+    if (data.type === "thumbnail") {
+      debouncedThumbnailRefetch();
+      return;
+    }
+
+    const previous = latestFilesStatusRef.current[data.uniqueId];
     if (data.removed) {
       latestFilesStatusRef.current = {
         ...latestFilesStatusRef.current,
@@ -156,18 +215,32 @@ export function useFiles(
         [data.uniqueId]: {
           fileId: data.fileId,
           downloadStatus:
-            data.downloadStatus ?? latestFilesStatusRef.current[data.uniqueId]?.downloadStatus,
-          localPath: data.localPath ?? latestFilesStatusRef.current[data.uniqueId]?.localPath,
-          completionDate:
-            data.completionDate ?? latestFilesStatusRef.current[data.uniqueId]?.completionDate,
-          downloadedSize:
-            data.downloadedSize ?? latestFilesStatusRef.current[data.uniqueId]?.downloadedSize,
-          transferStatus:
-            data.transferStatus ?? latestFilesStatusRef.current[data.uniqueId]?.transferStatus,
-          thumbnailFile: data.thumbnailFile ?? latestFilesStatusRef.current[data.uniqueId]?.thumbnailFile,
+            data.downloadStatus ?? previous?.downloadStatus,
+          localPath: data.localPath ?? previous?.localPath,
+          completionDate: data.completionDate ?? previous?.completionDate,
+          downloadedSize: data.downloadedSize ?? previous?.downloadedSize,
+          transferStatus: data.transferStatus ?? previous?.transferStatus,
+          thumbnailFile: data.thumbnailFile ?? previous?.thumbnailFile,
+          torrentStatus: data.torrentStatus ?? previous?.torrentStatus,
+          sharedByMe: data.sharedByMe ?? previous?.sharedByMe,
+          shareStatus: data.shareStatus ?? previous?.shareStatus,
+          sharedSourceId: data.sharedSourceId ?? previous?.sharedSourceId,
+          sharedResourceId:
+            data.sharedResourceId ?? previous?.sharedResourceId,
+          shareTitle: data.shareTitle ?? previous?.shareTitle,
+          shareDescription:
+            data.shareDescription ?? previous?.shareDescription,
+          shareTags: data.shareTags ?? previous?.shareTags,
+          shareCategory: data.shareCategory ?? previous?.shareCategory,
+          shareAccessScope:
+            data.shareAccessScope ?? previous?.shareAccessScope,
+          sharePublicMessageUrl:
+            data.sharePublicMessageUrl ?? previous?.sharePublicMessageUrl,
+          shareErrorCode: data.shareErrorCode ?? previous?.shareErrorCode,
         },
       };
     }
+
     // Prevent unbounded growth - keep only the latest 500 entries
     const keys = Object.keys(latestFilesStatusRef.current);
     if (keys.length > 500) {
@@ -176,8 +249,8 @@ export function useFiles(
         delete latestFilesStatusRef.current[key];
       }
     }
-    setUpdateCounter(prev => prev + 1);
-  }, [lastJsonMessage]);
+    setUpdateCounter((prev) => prev + 1);
+  }, [debouncedThumbnailRefetch, lastJsonMessage]);
 
   useEffect(() => {
     if (noAccountSpecified && !filters.offline) {
@@ -188,6 +261,10 @@ export function useFiles(
     }
   }, [filters.offline, noAccountSpecified, setFilters]);
 
+  // Status updates live in a ref and are merged into the fetched rows here. `updateCounter` is the
+  // signal that a new update arrived, so the memo recomputes without copying the whole map into
+  // state on every download-progress event.
+  /* eslint-disable react-hooks/refs */
   const files = useMemo(() => {
     if (!pages) return [];
     const files: TelegramFile[] = [];
@@ -197,16 +274,50 @@ export function useFiles(
         if (file.originalDeleted && statusUpdate?.removed) {
           return;
         }
-        files.push({
+        const merged = {
           ...file,
           id: statusUpdate?.fileId ?? file.id,
+          tags: statusUpdate?.tags ?? file.tags,
           downloadStatus: statusUpdate?.downloadStatus ?? file.downloadStatus,
           localPath: statusUpdate?.localPath ?? file.localPath,
           completionDate: statusUpdate?.completionDate ?? file.completionDate,
           downloadedSize: statusUpdate?.downloadedSize ?? file.downloadedSize,
           transferStatus: statusUpdate?.transferStatus ?? file.transferStatus,
           thumbnailFile: statusUpdate?.thumbnailFile ?? file.thumbnailFile,
-        });
+          torrentStatus: statusUpdate?.torrentStatus ?? file.torrentStatus,
+          sharedByMe: statusUpdate?.sharedByMe ?? file.sharedByMe,
+          shareStatus: statusUpdate?.shareStatus ?? file.shareStatus,
+          sharedSourceId: statusUpdate?.sharedSourceId ?? file.sharedSourceId,
+          sharedResourceId:
+            statusUpdate?.sharedResourceId ?? file.sharedResourceId,
+          shareTitle: statusUpdate?.shareTitle ?? file.shareTitle,
+          shareDescription:
+            statusUpdate?.shareDescription ?? file.shareDescription,
+          shareTags: statusUpdate?.shareTags ?? file.shareTags,
+          shareCategory: statusUpdate?.shareCategory ?? file.shareCategory,
+          shareAccessScope:
+            statusUpdate?.shareAccessScope ?? file.shareAccessScope,
+          sharePublicMessageUrl:
+            statusUpdate?.sharePublicMessageUrl ?? file.sharePublicMessageUrl,
+          shareErrorCode:
+            statusUpdate?.shareErrorCode ?? file.shareErrorCode,
+        };
+        // Live WebSocket updates can change a row's status after it was fetched. When a status
+        // filter is active, drop rows that no longer match so the filtered view stays consistent
+        // (otherwise e.g. a "downloading" filter keeps showing files that just completed).
+        if (
+          filters.downloadStatus &&
+          merged.downloadStatus !== filters.downloadStatus
+        ) {
+          return;
+        }
+        if (
+          filters.transferStatus &&
+          merged.transferStatus !== filters.transferStatus
+        ) {
+          return;
+        }
+        files.push(merged);
       });
     });
     files.forEach((file, index) => {
@@ -214,7 +325,8 @@ export function useFiles(
       file.next = files[index + 1];
     });
     return files;
-  }, [pages, updateCounter]);
+  }, [pages, updateCounter, filters.downloadStatus, filters.transferStatus]);
+  /* eslint-enable react-hooks/refs */
 
   const hasMore = useMemo(() => {
     if (!pages || pages.length === 0) return true;
@@ -223,10 +335,22 @@ export function useFiles(
     const lastPage = pages[pages.length - 1];
     let hasMore = false;
     if (lastPage) {
+      if (lastPage.hasMore !== undefined) return lastPage.hasMore;
       const count = lastPage.count;
       hasMore = count > fetchedCount && lastPage.nextFromMessageId !== 0;
     }
     return hasMore;
+  }, [pages]);
+
+  const totalCount = useMemo(() => {
+    if (!pages || pages.length === 0) return undefined;
+    for (let index = pages.length - 1; index >= 0; index -= 1) {
+      const count = pages[index]?.count;
+      if (count !== undefined) {
+        return count;
+      }
+    }
+    return undefined;
   }, [pages]);
 
   const handleLoadMore = useCallback(async () => {
@@ -252,6 +376,84 @@ export function useFiles(
     uniqueId: string,
     patch: Partial<TelegramFile>,
   ) => {
+    const existing = latestFilesStatusRef.current[uniqueId];
+    const currentFile = pagesRef.current
+      ?.flatMap((p) => p.files)
+      .find((f) => f.uniqueId === uniqueId);
+    latestFilesStatusRef.current = {
+      ...latestFilesStatusRef.current,
+      [uniqueId]: {
+        fileId: patch.id ?? existing?.fileId ?? currentFile?.id ?? 0,
+        downloadStatus:
+          patch.downloadStatus ??
+          existing?.downloadStatus ??
+          currentFile?.downloadStatus ??
+          "completed",
+        localPath:
+          patch.localPath ?? existing?.localPath ?? currentFile?.localPath,
+        completionDate:
+          patch.completionDate ??
+          existing?.completionDate ??
+          currentFile?.completionDate,
+        downloadedSize:
+          patch.downloadedSize ??
+          existing?.downloadedSize ??
+          currentFile?.downloadedSize ??
+          0,
+        transferStatus:
+          patch.transferStatus ??
+          existing?.transferStatus ??
+          currentFile?.transferStatus,
+        thumbnailFile:
+          patch.thumbnailFile ??
+          existing?.thumbnailFile ??
+          currentFile?.thumbnailFile,
+        torrentStatus:
+          patch.torrentStatus ??
+          existing?.torrentStatus ??
+          currentFile?.torrentStatus,
+        sharedByMe:
+          patch.sharedByMe ?? existing?.sharedByMe ?? currentFile?.sharedByMe,
+        shareStatus:
+          patch.shareStatus ??
+          existing?.shareStatus ??
+          currentFile?.shareStatus,
+        sharedSourceId:
+          patch.sharedSourceId ??
+          existing?.sharedSourceId ??
+          currentFile?.sharedSourceId,
+        sharedResourceId:
+          patch.sharedResourceId ??
+          existing?.sharedResourceId ??
+          currentFile?.sharedResourceId,
+        shareTitle:
+          patch.shareTitle ?? existing?.shareTitle ?? currentFile?.shareTitle,
+        shareDescription:
+          patch.shareDescription ??
+          existing?.shareDescription ??
+          currentFile?.shareDescription,
+        shareTags:
+          patch.shareTags ?? existing?.shareTags ?? currentFile?.shareTags,
+        shareCategory:
+          patch.shareCategory ??
+          existing?.shareCategory ??
+          currentFile?.shareCategory,
+        shareAccessScope:
+          patch.shareAccessScope ??
+          existing?.shareAccessScope ??
+          currentFile?.shareAccessScope,
+        sharePublicMessageUrl:
+          patch.sharePublicMessageUrl ??
+          existing?.sharePublicMessageUrl ??
+          currentFile?.sharePublicMessageUrl,
+        shareErrorCode:
+          patch.shareErrorCode ??
+          existing?.shareErrorCode ??
+          currentFile?.shareErrorCode,
+        tags: patch.tags ?? existing?.tags ?? currentFile?.tags,
+      },
+    };
+    setUpdateCounter((prev) => prev + 1);
     await mutate((pages) => {
       if (!pages) return [];
 
@@ -277,6 +479,8 @@ export function useFiles(
     clearFilters,
     handleLoadMore,
     hasMore,
+    loadedCount: files.length,
+    totalCount,
     mutate,
   };
 }

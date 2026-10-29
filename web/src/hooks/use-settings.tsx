@@ -12,7 +12,7 @@ interface SettingsContextType {
   updateSettings: (updates?: Partial<Settings>) => Promise<void>;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(
+export const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined,
 );
 
@@ -52,7 +52,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       // @ts-expect-error
       await mutate((current) => ({ ...current, ...updates }), false);
     }
-    toast({ variant: "success", description: "Settings updated" });
+    toast({ variant: "success", description: "设置已更新" });
   };
 
   const setSetting = async (key: SettingKey, value: string) => {

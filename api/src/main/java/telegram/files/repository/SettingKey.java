@@ -19,16 +19,26 @@ public enum SettingKey {
      */
     autoDownloadLimit(Convert::toInt),
     autoDownloadTimeLimited(value -> StrUtil.isBlank(value) ? null : new JsonObject(value).mapTo(SettingTimeLimitedDownload.class)),
+    /**
+     * Automatically preload thumbnails while browsing files.
+     */
+    thumbnailAutoLoad(Convert::toBool, false),
     proxys(value -> StrUtil.isBlank(value) ? null : new JsonObject(value).mapTo(SettingProxyRecords.class)),
     /**
      * Interval for calculating average speed, in seconds
      */
     avgSpeedInterval(Convert::toInt, 5 * 60),
     /**
+     * Minutes an unused TDLib account stays open before its database is closed.
+     * A value of 0 disables idle sleep.
+     */
+    tdlibIdleTimeoutMinutes(Convert::toInt, 0),
+    /**
      * Speed units for displaying download speed, e.g., "bits" or "bytes"
      */
     speedUnits(Function.identity(), "bits"),
-    tags(value -> StrUtil.isBlank(value) ? null : StrUtil.split(value, ","));
+    tags(value -> StrUtil.isBlank(value) ? null : StrUtil.split(value, ",")),
+    shareEnabled(Convert::toBool, false);
 
     public final Function<String, ?> converter;
 

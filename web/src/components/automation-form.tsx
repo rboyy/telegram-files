@@ -10,7 +10,7 @@ import {
   TransferPolices,
   type TransferPolicy,
 } from "@/lib/types";
-import React, { useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -26,7 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  Download,
+  ExternalLink,
+  FolderSync,
+  PackageSearch,
+  X,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -54,82 +62,118 @@ interface AutomationFormProps {
   onChange: (auto: Auto) => void;
 }
 
+function AutomationToggleSection({
+  id,
+  title,
+  description,
+  checked,
+  icon,
+  onCheckedChange,
+  children,
+}: React.PropsWithChildren<{
+  id: string;
+  title: string;
+  description: string;
+  checked: boolean;
+  icon: React.ReactNode;
+  onCheckedChange: (checked: boolean) => void;
+}>) {
+  return (
+    <section className="rounded-lg border bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 gap-3">
+          <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <Label htmlFor={id} className="font-semibold">
+              {title}
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      </div>
+      {children && <div className="mt-4 flex flex-col gap-4">{children}</div>}
+    </section>
+  );
+}
+
+function HintPanel({ children }: React.PropsWithChildren) {
+  return (
+    <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3">{children}</div>
+    </div>
+  );
+}
+
+function HintLine({ children }: React.PropsWithChildren) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+      <div className="leading-6">{children}</div>
+    </div>
+  );
+}
+
 export default function AutomationForm({
   auto,
   onChange,
 }: AutomationFormProps) {
   return (
-    <div className="space-y-4">
-      <div className="space-y-4 rounded-md border border-gray-200 p-4 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="enable-preload">启用预加载</Label>
-          <Switch
-            id="enable-preload"
-            checked={auto.preload.enabled}
-            onCheckedChange={(checked) => {
-              onChange({
-                ...auto,
-                preload: {
-                  ...auto.preload,
-                  enabled: checked,
-                },
-              });
-            }}
-          />
-        </div>
+    <div className="flex flex-col gap-4">
+      <AutomationToggleSection
+        id="enable-preload"
+        title="启用预加载"
+        description="提前索引对话中的文件，以便离线搜索。"
+        checked={auto.preload.enabled}
+        icon={<PackageSearch />}
+        onCheckedChange={(checked) => {
+          onChange({
+            ...auto,
+            preload: {
+              ...auto.preload,
+              enabled: checked,
+            },
+          });
+        }}
+      >
         {auto.preload.enabled && (
-          <div className="space-y-4 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex items-start">
-              <span className="mr-3 mt-1.5 h-3 w-2 flex-shrink-0 rounded-full bg-cyan-400"></span>
-              <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                这将为该对话启用预加载。所有文件将被加载，但不会被下载，然后您可以离线搜索。
-              </p>
-            </div>
-          </div>
+          <HintPanel>
+            <HintLine>所有文件将被加载到索引中，但不会被下载。</HintLine>
+          </HintPanel>
         )}
-      </div>
-      <div className="space-y-4 rounded-md border border-gray-200 p-4 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="enable-auto-download">启用自动下载</Label>
-          <Switch
-            id="enable-auto-download"
-            checked={auto.download.enabled}
-            onCheckedChange={(checked) => {
-              onChange({
-                ...auto,
-                download: {
-                  ...auto.download,
-                  enabled: checked,
-                },
-              });
-            }}
-          />
-        </div>
+      </AutomationToggleSection>
+      <AutomationToggleSection
+        id="enable-auto-download"
+        title="启用自动下载"
+        description="自动下载符合所配置规则的文件。"
+        checked={auto.download.enabled}
+        icon={<Download />}
+        onCheckedChange={(checked) => {
+          onChange({
+            ...auto,
+            download: {
+              ...auto.download,
+              enabled: checked,
+            },
+          });
+        }}
+      >
         {auto.download.enabled && (
           <>
-            <div className="space-y-4 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="flex items-start">
-                <span className="mr-3 mt-1.5 h-3 w-2 flex-shrink-0 rounded-full bg-cyan-400"></span>
-                <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                  这将为该对话启用自动下载。文件将被自动下载。
-                </p>
-              </div>
-              <div className="flex items-start">
-                <span className="mr-3 mt-1.5 h-3 w-2 flex-shrink-0 rounded-full bg-cyan-400"></span>
-                <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                  如果启用下载历史记录，历史消息中的文件将被首先下载，然后新消息中的文件将被自动下载。
-                </p>
-              </div>
-              <div className="flex items-start">
-                <span className="mr-3 mt-1.5 h-3 w-2 flex-shrink-0 rounded-full bg-cyan-400"></span>
-                <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                  下载顺序：
-                  <span className="ml-1 rounded bg-blue-100 px-2 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
-                    {"照片 -> 视频 -> 音频 -> 文件"}
-                  </span>
-                </p>
-              </div>
-            </div>
+            <HintPanel>
+              <HintLine>匹配的文件将被自动下载。</HintLine>
+              <HintLine>
+                如果启用下载历史记录，历史消息中的文件将被优先下载，然后自动下载新消息中的文件。
+              </HintLine>
+              <HintLine>
+                下载顺序：
+                <Badge variant="secondary" className="ml-1 font-normal">
+                  {"照片 -> 视频 -> 音频 -> 文件"}
+                </Badge>
+              </HintLine>
+            </HintPanel>
             <DownloadRule
               value={auto.download.rule}
               onChange={(value) => {
@@ -144,34 +188,28 @@ export default function AutomationForm({
             />
           </>
         )}
-      </div>
-      <div className="space-y-4 rounded-md border border-gray-200 p-4 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="enable-transfer">启用转移</Label>
-          <Switch
-            id="enable-transfer"
-            checked={auto.transfer.enabled}
-            onCheckedChange={(checked) => {
-              onChange({
-                ...auto,
-                transfer: {
-                  ...auto.transfer,
-                  enabled: checked,
-                },
-              });
-            }}
-          />
-        </div>
+      </AutomationToggleSection>
+      <AutomationToggleSection
+        id="enable-transfer"
+        title="启用转移"
+        description="自动将下载的文件移动到目标文件夹。"
+        checked={auto.transfer.enabled}
+        icon={<FolderSync />}
+        onCheckedChange={(checked) => {
+          onChange({
+            ...auto,
+            transfer: {
+              ...auto.transfer,
+              enabled: checked,
+            },
+          });
+        }}
+      >
         {auto.transfer.enabled && (
           <>
-            <div className="space-y-4 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="flex items-start">
-                <span className="mr-3 mt-1.5 h-3 w-2 flex-shrink-0 rounded-full bg-cyan-400"></span>
-                <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                  这将为该对话启用自动转移。下载的文件将被自动转移到指定位置。
-                </p>
-              </div>
-            </div>
+            <HintPanel>
+              <HintLine>下载的文件将被转移到指定位置。</HintLine>
+            </HintPanel>
             <TransferRule
               value={auto.transfer.rule}
               onChange={(value) => {
@@ -186,7 +224,7 @@ export default function AutomationForm({
             />
           </>
         )}
-      </div>
+      </AutomationToggleSection>
     </div>
   );
 }
@@ -232,14 +270,14 @@ function DownloadRule({ value, onChange }: DownloadRuleProps) {
   };
 
   return (
-    <Accordion type="single" collapsible>
-      <AccordionItem value="advanced">
+    <Accordion type="single" collapsible className="rounded-lg border bg-card">
+      <AccordionItem value="advanced" className="border-none px-4">
         <AccordionTrigger className="hover:no-underline">
           高级
         </AccordionTrigger>
         <AccordionContent>
-          <div className="flex flex-col space-y-4 rounded-md border p-4 shadow">
-            <div className="flex flex-col space-y-2">
+          <div className="flex flex-col gap-4 rounded-md border bg-muted/20 p-4">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="query-keyword">查询关键词</Label>
               <Input
                 id="query-keyword"
@@ -250,28 +288,29 @@ function DownloadRule({ value, onChange }: DownloadRuleProps) {
                 onChange={handleQueryChange}
               />
             </div>
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="filter-expr">
                 过滤表达式
                 <Link
                   href="https://github.com/jarvis2f/telegram-files/blob/main/misc/filter-expression-guide.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-2 text-sm text-blue-600 hover:underline"
+                  className="ml-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
                 >
-                  （了解更多）
+                  了解更多
+                  <ExternalLink className="size-3" />
                 </Link>
               </Label>
               <Textarea
                 id="filter-expr"
-                className="w-full"
+                className="min-h-24 w-full"
                 placeholder="输入过滤表达式（例如：str:contains(content.text.text, 'Hello') and id > 1000）"
                 value={value.filterExpr}
                 onChange={handleFilterExprChange}
               />
             </div>
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="fileTypes">过滤文件类型</Label>
               <Select onValueChange={handleFileTypeSelect}>
                 <SelectTrigger id="fileTypes">
@@ -286,24 +325,34 @@ function DownloadRule({ value, onChange }: DownloadRuleProps) {
                 </SelectContent>
               </Select>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                {value.fileTypes.map((type) => (
-                  <Badge
-                    key={type}
-                    className="flex items-center gap-1 px-2 py-1"
-                    variant="secondary"
-                  >
-                    {type}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeFileType(type)}
-                    />
-                  </Badge>
-                ))}
+              <div className="flex min-h-8 flex-wrap gap-2">
+                {value.fileTypes.length > 0 ? (
+                  value.fileTypes.map((type) => (
+                    <Badge
+                      key={type}
+                      className="flex items-center gap-1 px-2 py-1 capitalize"
+                      variant="secondary"
+                    >
+                      {type}
+                      <button
+                        type="button"
+                        aria-label={`移除 ${type}`}
+                        className="rounded-sm text-muted-foreground transition hover:text-foreground"
+                        onClick={() => removeFileType(type)}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    未选择文件类型
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="rounded-md border p-4">
+            <div className="rounded-md border bg-background p-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="download-history">下载历史文件</Label>
                 <Switch
@@ -321,11 +370,9 @@ function DownloadRule({ value, onChange }: DownloadRuleProps) {
                 如果启用，所有历史文件将被下载。否则，仅下载新文件。
               </p>
             </div>
-            <div className="rounded-md border p-4">
+            <div className="rounded-md border bg-background p-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="download-comment-files">
-                  下载评论文件
-                </Label>
+                <Label htmlFor="download-comment-files">下载评论文件</Label>
                 <Switch
                   id="download-comment-files"
                   checked={value.downloadCommentFiles}
@@ -351,6 +398,7 @@ interface TransferRuleProps {
 }
 
 function TransferRule({ value, onChange }: TransferRuleProps) {
+  const captionNameId = useId();
   const handleTransferRuleChange = (changes: Partial<AutoTransferRule>) => {
     onChange({
       ...value,
@@ -359,17 +407,15 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
   };
 
   return (
-    <Accordion type="single" collapsible>
-      <AccordionItem value="advanced">
+    <Accordion type="single" collapsible className="rounded-lg border bg-card">
+      <AccordionItem value="advanced" className="border-none px-4">
         <AccordionTrigger className="hover:no-underline">
           高级
         </AccordionTrigger>
         <AccordionContent>
-          <div className="flex flex-col space-y-4 rounded-md border p-4 shadow">
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="destination">
-                自动转移的目标文件夹
-              </Label>
+          <div className="flex flex-col gap-4 rounded-md border bg-muted/20 p-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="destination">自动转移的目标文件夹</Label>
               <Input
                 id="destination"
                 type="text"
@@ -382,7 +428,7 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
               />
             </div>
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="transfer-policy">转移策略</Label>
               <PolicySelect
                 policyType="transfer"
@@ -396,13 +442,11 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
             </div>
 
             {value.transferPolicy === "GROUP_BY_AI" && (
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="prompt-template">
-                  AI分类提示模板
-                </Label>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="prompt-template">AI分类提示模板</Label>
                 <Textarea
                   id="prompt-template"
-                  className="w-full"
+                  className="min-h-28 w-full"
                   rows={4}
                   placeholder="输入提示模板来指导AI分类"
                   value={value.extra.promptTemplate || ""}
@@ -418,7 +462,7 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
               </div>
             )}
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="duplication-policy">重复文件策略</Label>
               <PolicySelect
                 policyType="duplication"
@@ -431,7 +475,7 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
               />
             </div>
 
-            <div className="rounded-md border p-4">
+            <div className="rounded-md border bg-background p-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="transfer-history">转移历史文件</Label>
                 <Switch
@@ -444,6 +488,23 @@ function TransferRule({ value, onChange }: TransferRuleProps) {
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 将已下载的文件转移到指定位置。
+              </p>
+            </div>
+
+            <div className="rounded-md border bg-background p-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={captionNameId}>将消息说明加入文件名</Label>
+                <Switch
+                  id={captionNameId}
+                  checked={value.useCaptionName ?? false}
+                  onCheckedChange={(checked) =>
+                    handleTransferRuleChange({ useCaptionName: checked })
+                  }
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                转移文件时将消息说明（caption）追加到文件名后（例如
+                name_caption.jpg）。若消息没有说明，则保留原文件名。
               </p>
             </div>
           </div>
@@ -467,12 +528,10 @@ const PolicyLegends: Record<
   GROUP_BY_CHAT: {
     title: "按对话分组",
     description: (
-      <div className="space-y-2">
-        <p className="text-sm">
-          基于对话名称将文件转移到文件夹。
-        </p>
+      <div className="flex flex-col gap-2">
+        <p className="text-sm">基于对话名称将文件转移到文件夹。</p>
         <p className="text-xs text-muted-foreground">示例：</p>
-        <p className="inline-block rounded bg-gray-100 p-1 text-xs text-muted-foreground dark:bg-gray-800 dark:text-gray-300">
+        <p className="inline-block rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
           {"/${目标文件夹}/${Telegram Id}/${对话名称}/${文件}"}
         </p>
       </div>
@@ -481,13 +540,14 @@ const PolicyLegends: Record<
   GROUP_BY_TYPE: {
     title: "按类型分组",
     description: (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <p className="text-sm">
-          基于文件类型将文件转移到文件夹。<br />
+          基于文件类型将文件转移到文件夹。
+          <br />
           所有账户文件将被转移到同一个文件夹。
         </p>
         <p className="text-xs text-muted-foreground">示例：</p>
-        <p className="inline-block rounded bg-gray-100 p-1 text-xs text-muted-foreground dark:bg-gray-800 dark:text-gray-300">
+        <p className="inline-block rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
           {"/${目标文件夹}/${文件类型}/${文件}"}
         </p>
       </div>
@@ -496,16 +556,14 @@ const PolicyLegends: Record<
   GROUP_BY_AI: {
     title: "按AI分组",
     description: (
-      <div className="space-y-2">
-        <p className="text-sm">
-          使用AI分类文件，并基于文件内容将它们转移到不同的文件夹。
-        </p>
-        <p className="text-sm">
-          你可以编写提示来指导AI分类文件。例如：
-        </p>
-        <p className="inline-block rounded bg-gray-100 p-1 text-xs text-muted-foreground dark:bg-gray-800 dark:text-gray-300">
-          将以下文件分类为：工作、个人、重要、其他。<br />
-          文件名：{"{file_name}"}<br />
+      <div className="flex flex-col gap-2">
+        <p className="text-sm">使用AI分类文件，并基于文件内容将它们转移到不同的文件夹。</p>
+        <p className="text-sm">你可以编写提示来指导AI分类文件。例如：</p>
+        <p className="inline-block rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+          将以下文件分类为：工作、个人、重要、其他。
+          <br />
+          文件名：{"{file_name}"}
+          <br />
           仅回复分类名称。
         </p>
         <p className="text-sm">
@@ -516,13 +574,11 @@ const PolicyLegends: Record<
   },
   OVERWRITE: {
     title: "覆盖",
-    description:
-      "如果目标文件夹存在相同名称的文件，移动并覆盖该文件。",
+    description: "如果目标文件夹存在相同名称的文件，移动并覆盖该文件。",
   },
   SKIP: {
     title: "跳过",
-    description:
-      "如果目标文件夹存在相同名称的文件，跳过该文件，不执行任何操作。",
+    description: "如果目标文件夹存在相同名称的文件，跳过该文件，不执行任何操作。",
   },
   RENAME: {
     title: "重命名",
@@ -566,15 +622,15 @@ function PolicySelect({ policyType, value, onChange }: PolicySelectProps) {
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[250px] p-0" modal={true}>
+      <PopoverContent align="start" className="w-[280px] p-0" modal={true}>
         <HoverCard>
           <HoverCardContent
             side="top"
             align="start"
             forceMount
-            className="min-h-[150px] w-auto min-w-64 max-w-[380px]"
+            className="min-h-[150px] w-auto min-w-64 max-w-[380px] border bg-popover"
           >
-            <div className="grid gap-2">
+            <div className="flex flex-col gap-2">
               <h4 className="font-medium leading-none">
                 {peekPolicyLegend?.title}
               </h4>
@@ -639,7 +695,7 @@ function PolicyItem({ policy, isSelected, onSelect, onPeek }: PolicyItemProps) {
       key={policy}
       onSelect={onSelect}
       ref={ref}
-      className="data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground"
+      className="data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
     >
       {policy}
       <Check

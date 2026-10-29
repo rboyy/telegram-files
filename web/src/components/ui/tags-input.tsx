@@ -17,7 +17,7 @@ interface TagsInputProps {
 export const TagsInput: React.FC<TagsInputProps> = ({
   value,
   onChange,
-  placeholder = "Enter the tag and press Enter...",
+  placeholder = "输入标签后按回车...",
   maxTags = Infinity,
   className = "",
 }) => {
@@ -106,7 +106,7 @@ export const TagsInput: React.FC<TagsInputProps> = ({
                   }}
                 >
                   <X className="h-3 w-3" />
-                  <span className="sr-only">Delete {tag}</span>
+                  <span className="sr-only">删除 {tag}</span>
                 </Button>
               </Badge>
             </motion.div>
@@ -141,7 +141,7 @@ export const TagsInput: React.FC<TagsInputProps> = ({
               onClick={() => handleAddTag(inputValue)}
             >
               <Plus className="h-4 w-4" />
-              <span className="sr-only">Add tag</span>
+              <span className="sr-only">添加标签</span>
             </Button>
           </motion.div>
         )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { TelegramAccount } from "@/lib/types";
 import useSWR from "swr";
@@ -34,12 +33,17 @@ export const TelegramAccountProvider: React.FC<
     isValidating,
   } = useSWR<TelegramAccount[]>(`/telegrams`);
   const router = useRouter();
-  const { toast } = useToast();
   const searchParams = useSearchParams();
   const routerAccountId = searchParams.get("id") ?? undefined;
   const [accountId, setAccountId] = useState<string | undefined>(
     routerAccountId,
   );
+
+  // This provider lives in the root layout and survives client-side navigation. Keep its local
+  // selection in sync when a link (for example, from /automations) changes the URL directly.
+  useEffect(() => {
+    setAccountId(routerAccountId);
+  }, [routerAccountId]);
 
   const { trigger: triggerChange } = useSWRMutation(
     "/telegrams/change",
@@ -72,14 +76,9 @@ export const TelegramAccountProvider: React.FC<
     if (!account) return;
     setAccountId(newAccountId);
     if (account.status === "active") {
-      toast({
-        variant: "info",
-        title: "Account Changed",
-        description: `Switched to ${accounts?.find((a) => a.id === newAccountId)?.name}'s account`,
-      });
       router.push(`/accounts?id=${newAccountId}`);
     }
-  }, [accountId, routerAccountId, accounts, router, toast]);
+  }, [accountId, routerAccountId, accounts, router]);
 
   const handleAccountReset = useCallback(() => {
     void triggerChange({ accountId: "" }).then(() => setAccountId(undefined));

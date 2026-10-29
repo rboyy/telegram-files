@@ -3,20 +3,21 @@ import React, { useEffect, useState } from "react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { LoaderPinwheel } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import FileVideo from "@/components/file-video";
 import FileInfo from "@/components/mobile/file-info";
 import { type useFiles } from "@/hooks/use-files";
 import useFileSwitch from "@/hooks/use-file-switch";
 import FileImage from "../file-image";
+import { DotmTriangle2 } from "@/components/ui/dotm-triangle-2";
+import { MobilePreviewTagOverlay } from "./mobile-preview-tag-overlay";
 
 type FileDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   file: TelegramFile;
   onFileChange: (file: TelegramFile) => void;
-  onFileTagsClick: (file: TelegramFile) => void;
+  initialViewing?: boolean;
 } & ReturnType<typeof useFiles>;
 
 export default function FileDrawer({
@@ -24,12 +25,12 @@ export default function FileDrawer({
   onOpenChange,
   file,
   onFileChange,
-  onFileTagsClick,
+  initialViewing = false,
   hasMore,
   handleLoadMore,
   isLoading,
 }: FileDrawerProps) {
-  const [viewing, setViewing] = useState(false);
+  const [viewing, setViewing] = useState(initialViewing);
 
   // 防止在下载状态变化时意外调用onFileChange导致drawer关闭
   const handleFileChange = (newFile: TelegramFile) => {
@@ -45,6 +46,12 @@ export default function FileDrawer({
     hasMore,
     handleLoadMore,
   });
+
+  useEffect(() => {
+    if (open) {
+      setViewing(initialViewing);
+    }
+  }, [file.id, initialViewing, open]);
 
   useEffect(() => {
     if (
@@ -78,6 +85,11 @@ export default function FileDrawer({
         }
 
         if (viewing && Math.abs(dy) > Math.abs(dx) && dy > 0) {
+          if (initialViewing) {
+            onOpenChange(false);
+            document.removeEventListener("touchend", handleTouchEnd);
+            return;
+          }
           setViewing(false);
         }
         document.removeEventListener("touchend", handleTouchEnd);
@@ -86,22 +98,28 @@ export default function FileDrawer({
     };
     document.addEventListener("touchstart", handleTouchStart);
     return () => document.removeEventListener("touchstart", handleTouchStart);
-  }, [handleNavigation, file, viewing]);
+  }, [handleNavigation, file, initialViewing, onOpenChange, viewing]);
 
   const slideVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 500 : -500,
       opacity: 0,
+      position: "relative" as const,
     }),
     center: {
       zIndex: 1,
       x: 0,
       opacity: 1,
+      position: "relative" as const,
     },
     exit: (direction: number) => ({
       zIndex: 0,
       x: direction < 0 ? 500 : -500,
       opacity: 0,
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      width: "100%",
     }),
   };
 
@@ -112,12 +130,15 @@ export default function FileDrawer({
       open={open}
       onOpenChange={(open) => {
         if (!open && viewing) {
+          if (initialViewing) {
+            onOpenChange(false);
+            return;
+          }
           setViewing(false);
           return;
         }
         onOpenChange(open);
       }}
-      handleOnly={viewing}
     >
       <DrawerContent
         data-fileid={file.id}
@@ -125,7 +146,8 @@ export default function FileDrawer({
         data-next={file.next?.id}
         className={cn(
           "focus:outline-none",
-          viewing && "rounded-none border-none",
+          viewing &&
+            "!inset-0 !m-0 !h-dvh !max-h-dvh !w-screen !max-w-full !rounded-none !border-none bg-black [--drawer-inset:0px] [--drawer-content-height:100dvh] [--drawer-content-max-height:100dvh]",
         )}
         aria-describedby={undefined}
       >
@@ -134,47 +156,73 @@ export default function FileDrawer({
         </VisuallyHidden>
         {isLoading && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            <LoaderPinwheel
-              className="h-8 w-8 animate-spin"
-              style={{ strokeWidth: "0.8px" }}
+            <DotmTriangle2
+              size={32}
+              dotSize={4}
+              speed={1.4}
+              opacityBase={0.1}
+              opacityMid={0.4}
+              opacityPeak={0.95}
+              ariaLabel="Loading file details"
             />
           </div>
         )}
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={`${file.id}-${file.uniqueId}`}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
-            }}
-            style={{
-              maxWidth: "100vw",
-              maxHeight: "100vh",
-            }}
-          >
-            {viewing ? (
-              <div className="relative flex min-h-screen items-center justify-center">
-                {file.type === "video" &&
-                file.downloadStatus === "completed" ? (
-                  <FileVideo file={file} />
-                ) : (
-                  <FileImage file={file} className="h-full" isFullPreview />
-                )}
-              </div>
-            ) : (
-              <FileInfo
-                onView={() => setViewing(true)}
-                file={file}
-                onFileTagsClick={onFileTagsClick}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+        <div
+          className={cn(
+            "grid grid-cols-1 grid-rows-1 flex-1 min-h-0 w-full overflow-hidden",
+            viewing && "h-dvh w-screen",
+          )}
+        >
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+              key={`${file.id}-${file.uniqueId}`}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 350, damping: 32 },
+                opacity: { duration: 0.2 },
+              }}
+              className={cn(
+                "col-start-1 row-start-1 flex flex-col min-h-0 w-full overflow-hidden",
+                viewing ? "h-dvh w-screen" : "h-full",
+              )}
+              style={{
+                maxWidth: "100vw",
+                maxHeight: "100vh",
+              }}
+            >
+              {viewing ? (
+                <div className="relative flex h-dvh w-screen items-center justify-center bg-black">
+                  {file.type === "video" &&
+                  file.downloadStatus === "completed" ? (
+                    <FileVideo
+                      file={file}
+                      onFileChange={onFileChange}
+                    />
+                  ) : (
+                    <>
+                      <FileImage file={file} className="h-full" isFullPreview />
+                      <MobilePreviewTagOverlay
+                        file={file}
+                        onFileChange={onFileChange}
+                        bottomOffset="bottom-12"
+                      />
+                    </>
+                  )}
+                </div>
+              ) : (
+                <FileInfo
+                  onView={() => setViewing(true)}
+                  file={file}
+                  onFileChange={onFileChange}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </DrawerContent>
     </Drawer>
   );

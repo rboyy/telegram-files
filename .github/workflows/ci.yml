@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "dev", "main" ]
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - '.github/workflows/ci.yml'
+      - '.env.example'
+      - 'Dockerfile'
+      - 'entrypoint.sh'
+      - 'nginx.conf.template'
+      - 'VERSION'
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - '.github/workflows/ci.yml'
+      - '.env.example'
+      - 'Dockerfile'
+      - 'entrypoint.sh'
+      - 'nginx.conf.template'
+      - 'VERSION'
+
+jobs:
+  build:
+    runs-on: 'ubuntu-24.04'
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./api
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v5
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache tdlib
+        id: cache-tdlib
+        uses: actions/cache@v4
+        with:
+          path: |
+            ../libs
+          key: ${{ runner.os }}-tdlib-1.15.0
+
+      - name: Download tdlib
+        if: steps.cache-tdlib.outputs.cache-hit != 'true'
+        run: |
+          cd ../ && \
+          wget --no-check-certificate -q -O libs.zip https://github.com/p-vorobyev/spring-boot-starter-telegram/releases/download/1.15.0/libs.zip && \
+          unzip -q libs.zip
+
+      - name: Create test configuration
+        run: |
+          cat <<EOF > ../.env.test
+          TDLIB_PATH=../libs/linux_x64
+          APP_ENV=prod
+          APP_ROOT=${{ github.workspace }}/data
+          TELEGRAM_API_ID=1
+          TELEGRAM_API_HASH=test-only-placeholder
+          LOG_LEVEL=FINE
+          EOF
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Run tests
+        run: ./gradlew test jacocoTestReport
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  web:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_WS_URL: ws://localhost:8080/ws
+      NEXT_PUBLIC_SCAN: 'false'
+      NEXT_PUBLIC_MOCK_DATA: 'false'
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+#      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run build

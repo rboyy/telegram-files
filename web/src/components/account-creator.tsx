@@ -11,7 +11,17 @@ import React, {
   useState,
 } from "react";
 import { useDebounce } from "use-debounce";
-import { Ellipsis, LoaderCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  Ellipsis,
+  LoaderCircle,
+  LockKeyhole,
+  MessageSquareCode,
+  Phone,
+  QrCode,
+  Rocket,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +42,59 @@ import TGDuck16Plane from "@/components/animations/tg-duck16_plane.json";
 import TGQRPlane from "@/components/animations/tg-qr-plane.json";
 import dynamic from "next/dynamic";
 import QRCodeStyling, { type Options } from "qr-code-styling";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+
+function AuthPanel({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md border bg-card p-4 shadow-sm">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="font-semibold">{title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function InlineNotice({
+  tone = "default",
+  title,
+  children,
+}: {
+  tone?: "default" | "warning" | "destructive";
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border p-3 text-sm",
+        tone === "warning" && "border-amber-500/30 bg-amber-500/10",
+        tone === "destructive" && "border-destructive/30 bg-destructive/10",
+        tone === "default" && "bg-muted/40 text-muted-foreground",
+      )}
+    >
+      {title && <p className="mb-1 font-medium text-foreground">{title}</p>}
+      <div className="text-muted-foreground">{children}</div>
+    </div>
+  );
+}
 
 interface AccountCreatorProps {
   isAdd?: boolean;
@@ -40,7 +103,7 @@ interface AccountCreatorProps {
   onLoginSuccess?: () => void;
 }
 
-const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+const Lottie = dynamic(() => import("lottie-react"));
 
 export default function AccountCreator({
   isAdd,
@@ -92,6 +155,7 @@ export default function AccountCreator({
         case TelegramConstructor.WAIT_PHONE_NUMBER:
         case TelegramConstructor.WAIT_CODE:
         case TelegramConstructor.WAIT_PASSWORD:
+        case TelegramConstructor.WAIT_PREMIUM_PURCHASE:
           setAuthState(state.constructor);
           break;
         case TelegramConstructor.WAIT_OTHER_DEVICE_CONFIRMATION:
@@ -155,115 +219,186 @@ export default function AccountCreator({
 
   if (debounceIsCreateMutating) {
     return (
-      <div className="flex items-center justify-center space-x-2 text-xl">
-        <span>正在初始化账户，请稍候</span>
-        <Ellipsis className="h-4 w-4 animate-pulse" />
+      <div className="rounded-md border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <Skeleton className="size-10 rounded-md" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-64 max-w-full" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
       </div>
     );
   }
 
   if (createError) {
     return (
-      <div className="text-center text-xl">
-        <span className="mr-3 text-3xl">😲</span>
-        初始化账户失败，请稍后重试。
+      <div className="rounded-md border border-destructive/40 bg-card p-4 text-destructive shadow-sm">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0" />
+          <div>
+            <p className="font-medium">初始化账户失败</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              请稍后重试，或在重试前更换其他代理。
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!initSuccessfully) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <Lottie
-          className="mb-10 h-28 w-28 md:mb-3"
-          animationData={TGDuck16Plane}
-          loop={true}
-        />
-        <Button
-          className={cn("w-full", debounceIsCreateMutating ? "opacity-50" : "")}
-          disabled={debounceIsCreateMutating}
-          onClick={async () => {
-            await triggerCreate().then(() => {
-              void mutate("/telegrams");
-              setInitSuccessfully(true);
-            });
-          }}
-        >
-          开始初始化
-        </Button>
+      <div className="rounded-md border bg-card p-5 shadow-sm">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="relative">
+            <div className="absolute inset-3 rounded-full bg-muted" />
+            <Lottie
+              className="relative size-28"
+              animationData={TGDuck16Plane}
+              loop={true}
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-center gap-2">
+              <h3 className="text-lg font-semibold">初始化 Telegram</h3>
+              {proxyName && (
+                <Badge variant="secondary">代理：{proxyName}</Badge>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              为该账户发起安全的 Telegram 授权会话。
+            </p>
+          </div>
+          <Button
+            className="w-full"
+            disabled={debounceIsCreateMutating}
+            onClick={async () => {
+              await triggerCreate().then(() => {
+                void mutate("/telegrams");
+                setInitSuccessfully(true);
+              });
+            }}
+          >
+            <Rocket />
+            开始初始化
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (!authState && !isMethodExecuting) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-2 rounded bg-gray-50 p-2">
-        <p>正在等待 Telegram 账户初始化，请稍候。</p>
-        <p>如果等待时间过长，请刷新页面或稍后重试。</p>
-        <Ellipsis className="h-4 w-4 animate-pulse" />
+      <div className="flex flex-col items-center justify-center gap-3 rounded-md border bg-muted/30 p-5 text-center">
+        <Ellipsis className="size-5 animate-pulse text-muted-foreground" />
+        <div>
+          <p className="font-medium">正在等待 Telegram 授权</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            如果等待时间过长，请刷新页面或稍后重试。
+          </p>
+        </div>
       </div>
     );
   }
 
   const authStateFormFields = {
     [TelegramConstructor.WAIT_PHONE_NUMBER]: (
-      <div className="space-y-2">
-        <Label htmlFor="phone">电话号码</Label>
-        <p className="text-xs text-gray-500">
-          必须包含国家代码，例如：8613712345678
-        </p>
-        <Input
-          id="phone"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          disabled={isMethodExecuting}
-          required
-        />
-      </div>
+      <AuthPanel
+        icon={Phone}
+        title="电话号码"
+        description="请输入包含国家代码的账户电话号码。"
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="phone">电话号码</Label>
+          <Input
+            id="phone"
+            placeholder="8613712345678"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            disabled={isMethodExecuting}
+            required
+          />
+          <p className="text-sm text-muted-foreground">
+            示例：8613712345678。非数字字符会被自动移除。
+          </p>
+        </div>
+      </AuthPanel>
     ),
     [TelegramConstructor.WAIT_OTHER_DEVICE_CONFIRMATION]: (
-      <QRCode link={qrCodeLink} />
+      <AuthPanel
+        icon={QrCode}
+        title="二维码登录"
+        description="使用已登录的 Telegram 应用扫码。"
+      >
+        <QRCodePanel link={qrCodeLink} />
+      </AuthPanel>
     ),
     [TelegramConstructor.WAIT_CODE]: (
-      <div className="space-y-2">
-        <Label htmlFor="code">验证码</Label>
-        <p className="text-xs text-gray-500">
-          请输入发送到您的 Telegram 账户的验证码。
-        </p>
-        <InputOTP
-          id="code"
-          maxLength={6}
-          value={code}
-          disabled={isMethodExecuting}
-          required
-          onChange={(value) => setCode(value)}
-        >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
+      <AuthPanel
+        icon={MessageSquareCode}
+        title="验证码"
+        description="请输入发送到您的 Telegram 账户的验证码。"
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="code">验证码</Label>
+          <InputOTP
+            id="code"
+            maxLength={6}
+            value={code}
+            disabled={isMethodExecuting}
+            required
+            onChange={(value) => setCode(value)}
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+      </AuthPanel>
     ),
     [TelegramConstructor.WAIT_PASSWORD]: (
-      <div className="space-y-2">
-        <Label htmlFor="password">密码</Label>
-        <p className="text-xs text-gray-500">
-          您已启用两步验证，请输入您的密码。
-        </p>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isMethodExecuting}
-          required
-        />
-      </div>
+      <AuthPanel
+        icon={LockKeyhole}
+        title="两步验证"
+        description="请输入该 Telegram 账户设置的密码。"
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password">密码</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isMethodExecuting}
+            required
+          />
+          <InlineNotice tone="warning">
+            使用 Passkey 而不是密码？请关闭此对话框，重新开始，并从已登录的
+            Telegram 设备使用<strong>通过二维码登录</strong>。
+          </InlineNotice>
+        </div>
+      </AuthPanel>
+    ),
+    [TelegramConstructor.WAIT_PREMIUM_PURCHASE]: (
+      <AuthPanel
+        icon={ShieldAlert}
+        title="需要 Telegram Premium"
+        description="该账户需要有效的 Telegram Premium 订阅才能登录。"
+      >
+        <InlineNotice tone="destructive">
+          请在 Telegram 官方应用中购买 Premium 订阅后重试。
+        </InlineNotice>
+      </AuthPanel>
     ),
   };
 
@@ -304,32 +439,33 @@ export default function AccountCreator({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {authState && (
         <>
           {authStateFormFields[authState]}
-          {authState !== TelegramConstructor.WAIT_OTHER_DEVICE_CONFIRMATION && (
-            <Button
-              type="submit"
-              className={cn("w-full", isMethodExecuting ? "opacity-50" : "")}
-              disabled={isMethodExecuting}
-            >
-              {isDeMethodExecuting ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-              ) : (
-                "🚀 提交"
-              )}
-            </Button>
-          )}
+          {authState !== TelegramConstructor.WAIT_OTHER_DEVICE_CONFIRMATION &&
+            authState !== TelegramConstructor.WAIT_PREMIUM_PURCHASE && (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isMethodExecuting}
+              >
+                {isDeMethodExecuting ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  "提交"
+                )}
+              </Button>
+            )}
           {authState === TelegramConstructor.WAIT_PHONE_NUMBER && (
             <Button
               variant="outline"
-              className={cn("w-full", isMethodExecuting ? "opacity-50" : "")}
+              className="w-full"
               disabled={isMethodExecuting}
               onClick={handleRequestQrCodeAuthentication}
             >
               {isDeMethodExecuting ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <LoaderCircle className="animate-spin" />
               ) : (
                 "通过二维码登录"
               )}
@@ -362,7 +498,7 @@ const options: Options = {
   },
 };
 
-function QRCode({ link }: { link?: string }) {
+function QRCodePanel({ link }: { link?: string }) {
   const [qrCode, setQrCode] = useState<QRCodeStyling>();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -390,27 +526,26 @@ function QRCode({ link }: { link?: string }) {
 
   if (!link) {
     return (
-      <div className="flex items-center justify-center">
-        <LoaderCircle className="h-14 w-14 animate-spin" />
+      <div className="flex min-h-72 items-center justify-center">
+        <LoaderCircle className="size-10 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-2">
-      <div className="relative flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center gap-3">
+      <div className="relative flex items-center justify-center rounded-[2rem] border bg-white p-2 shadow-sm">
         <div className="overflow-hidden rounded-3xl bg-white" ref={ref} />
         <Lottie
-          className="absolute left-1/2 top-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-gray-800"
+          className="absolute left-1/2 top-1/2 z-10 size-14 -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-foreground"
           animationData={TGQRPlane}
           loop={true}
         />
       </div>
-      <div className="rounded-lg bg-white bg-opacity-80 p-1 dark:bg-gray-800">
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-          使用您的 Telegram 应用扫描二维码登录。
-        </p>
-      </div>
+      <p className="max-w-72 text-center text-sm text-muted-foreground">
+        请在另一台设备上打开
+        Telegram，进入已登录的设备页面，扫描此二维码。
+      </p>
     </div>
   );
 }

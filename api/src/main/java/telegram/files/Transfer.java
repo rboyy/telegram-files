@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 public abstract class Transfer {
 
@@ -36,6 +37,8 @@ public abstract class Transfer {
 
     public boolean transferHistory;
 
+    public boolean useCaptionName;
+
     public JsonObject extra;
 
     public Consumer<TransferStatusUpdated> transferStatusUpdated;
@@ -44,11 +47,21 @@ public abstract class Transfer {
     
     private long telegramId;
 
+    private static final int MAX_CAPTION_NAME_LENGTH = 80;
+
+    // Keep the whole file name under common filesystem limits (~255), with margin for multibyte chars.
+    private static final int MAX_FILENAME_LENGTH = 200;
+
+    private static final Pattern ILLEGAL_FILENAME_CHARS = Pattern.compile("[\\\\/:*?\"<>|\\r\\n\\t]");
+
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+
     public Transfer(SettingAutoRecords.TransferRule transferRule) {
         this.destination = transferRule.destination;
         this.transferPolicy = transferRule.transferPolicy;
         this.duplicationPolicy = transferRule.duplicationPolicy;
         this.transferHistory = transferRule.transferHistory;
+        this.useCaptionName = transferRule.useCaptionName;
         this.extra = transferRule.extra != null ? transferRule.extra : new JsonObject();
     }
 
@@ -74,6 +87,7 @@ public abstract class Transfer {
                || this.transferPolicy != transferRule.transferPolicy
                || this.duplicationPolicy != transferRule.duplicationPolicy
                || this.transferHistory != transferRule.transferHistory
+               || this.useCaptionName != transferRule.useCaptionName
                || !Objects.equals(this.extra, transferRule.extra);
     }
 
@@ -157,6 +171,50 @@ public abstract class Transfer {
         return Path.of(parent, "%s-%d.%s".formatted(baseName, i, extension)).toString();
     }
 
+    /**
+     * Builds the destination file name. When {@link #useCaptionName} is enabled and the file has a
+     * caption, the caption is appended before the extension: {@code <originalBaseName>_<caption>.<ext>},
+     * capped at {@link #MAX_FILENAME_LENGTH}. Falls back to the original file name when disabled or
+     * when there is no usable caption.
+     * <p>Note: the GROUP_BY_AI policy may instead use a file name chosen by the model (when it returns
+     * a path that already includes a file name); in that case the caption is not appended.
+     */
+    protected String buildFileName(FileRecord fileRecord) {
+        String originalName = FileUtil.getName(fileRecord.localPath());
+        if (!useCaptionName || StrUtil.isBlank(fileRecord.caption())) {
+            return originalName;
+        }
+        String caption = sanitizeForFileName(fileRecord.caption());
+        if (StrUtil.isBlank(caption)) {
+            return originalName;
+        }
+        String extension = FileUtil.extName(originalName);
+        String baseName = FileUtil.mainName(originalName);
+        String stem = "%s_%s".formatted(baseName, caption);
+        String suffix = StrUtil.isBlank(extension) ? "" : "." + extension;
+        // Cap the whole file name (preserving the extension) so a long original name plus the
+        // caption can't exceed common filesystem limits.
+        int maxStem = MAX_FILENAME_LENGTH - suffix.length();
+        if (maxStem > 0 && stem.length() > maxStem) {
+            stem = stem.substring(0, maxStem).trim();
+        }
+        return stem + suffix;
+    }
+
+    private static String sanitizeForFileName(String text) {
+        if (text == null) {
+            return "";
+        }
+        // Replace characters that are illegal/problematic in file names and collapse whitespace.
+        String sanitized = WHITESPACE.matcher(ILLEGAL_FILENAME_CHARS.matcher(text).replaceAll(" "))
+                .replaceAll(" ")
+                .trim();
+        if (sanitized.length() > MAX_CAPTION_NAME_LENGTH) {
+            sanitized = sanitized.substring(0, MAX_CAPTION_NAME_LENGTH).trim();
+        }
+        return sanitized;
+    }
+
     public FileRecord getTransferRecord() {
         return transferRecord;
     }
@@ -171,7 +229,7 @@ public abstract class Transfer {
 
         @Override
         protected String getTransferPath(FileRecord fileRecord) {
-            String name = FileUtil.getName(fileRecord.localPath());
+            String name = buildFileName(fileRecord);
             String chatName = getChatName(fileRecord);
             return Path.of(destination,
                     String.valueOf(fileRecord.telegramId()),
@@ -211,7 +269,7 @@ public abstract class Transfer {
 
         @Override
         protected String getTransferPath(FileRecord fileRecord) {
-            String name = FileUtil.getName(fileRecord.localPath());
+            String name = buildFileName(fileRecord);
             return Path.of(destination,
                     fileRecord.type(),
                     name
@@ -251,8 +309,9 @@ public abstract class Transfer {
                 throw new IllegalStateException("Invalid classification result from AI: " + result);
             }
             log.debug("File {} classified to {} by AI, reason: {}", fileRecord.id(), result.path, result.reason);
-            String name = FileUtil.getName(fileRecord.localPath());
-            // Check if the path contains file extension
+            String name = buildFileName(fileRecord);
+            // If the model returned a path that already includes a file name (has an extension),
+            // that AI-chosen name is used as-is — the caption is intentionally not appended here.
             if (StrUtil.isNotBlank(FileUtil.extName(result.path))) {
                 name = "";
             }
@@ -277,7 +336,7 @@ public abstract class Transfer {
 
         @Override
         protected String getTransferPath(FileRecord fileRecord) {
-            String name = FileUtil.getName(fileRecord.localPath());
+            String name = buildFileName(fileRecord);
             return Path.of(destination, name).toString();
         }
     }

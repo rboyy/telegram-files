@@ -165,15 +165,8 @@ function MobileParseLinkDrawer({
 }) {
   const [link, setLink] = useState<string>("");
   return (
-    <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
-      disablePreventScroll={true}
-      repositionInputs={false}
-    >
-      <DrawerContent className="w-full md:w-2/3" aria-describedby={undefined}>
-        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="md:w-2/3" aria-describedby={undefined}>
         <div className="p-4">
           <DrawerTitle className="mb-4">解析链接</DrawerTitle>
           <p className="mb-2 text-sm text-muted-foreground">
@@ -198,9 +191,7 @@ function MobileParseLinkDrawer({
           >
             提交
           </Button>
-          <DrawerClose asChild>
-            <Button variant="outline">关闭</Button>
-          </DrawerClose>
+          <DrawerClose render={<Button variant="outline">关闭</Button>} />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

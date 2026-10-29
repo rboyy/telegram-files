@@ -29,7 +29,7 @@ export default function useFileSwitch({
         } else {
           toast({
             variant: "info",
-            description: "No more files to load",
+            description: "没有更多可加载的文件",
           });
         }
       }

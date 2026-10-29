@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
 import {
+  CircleStop,
   Download,
   FileX,
   LoaderCircle,
   Pause,
+  RadioTower,
   SquareX,
   StepForward,
 } from "lucide-react";
 import React, { useState } from "react";
 import useSWRMutation from "swr/mutation";
-import { POST } from "@/lib/api";
+import { POST, request } from "@/lib/api";
 import { type TelegramFile } from "@/lib/types";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import {
@@ -22,6 +24,26 @@ import {
 } from "./ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { BatchFileTags } from "@/components/file-tags";
+import Image from "next/image";
+import { useShareEnabled } from "@/hooks/use-share-enabled";
+
+function getSeedResourceId(file: TelegramFile): string | null {
+  return (
+    file.seedResourceId ??
+    (file.uniqueId.startsWith("seed:") ? file.uniqueId.slice(5) : null)
+  );
+}
+
+function seedFileMapper(
+  file: TelegramFile,
+): Record<string, unknown> | null {
+  const resourceId = getSeedResourceId(file);
+  if (!resourceId) return null;
+  return {
+    telegramId: 0,
+    uniqueId: `seed:${resourceId}`,
+  };
+}
 
 interface FileBatchControlProps {
   selectedFiles: Set<number>;
@@ -53,13 +75,45 @@ export default function FileBatchControl({
   const continuableCounts = selectedFileObjects.filter(
     (file) => file.downloadStatus === "paused",
   ).length;
-  const cancelableCounts = selectedFileObjects.filter(
-    (file) => file.downloadStatus === "downloading",
+  const cancelDownloadCounts = selectedFileObjects.filter(
+    (file) =>
+      file.downloadStatus === "downloading" ||
+      file.downloadStatus === "paused",
   ).length;
+  const shareEnabled = useShareEnabled();
+  const seedResumableCounts = shareEnabled
+    ? selectedFileObjects.filter(
+        (file) =>
+          file.downloadStatus === "completed" &&
+          (file.torrentStatus === "STOPPED" || file.torrentStatus === "PAUSED"),
+      ).length
+    : 0;
+  const seedStoppableCounts = shareEnabled
+    ? selectedFileObjects.filter(
+        (file) =>
+          file.downloadStatus === "completed" &&
+          !!file.torrentStatus &&
+          file.torrentStatus !== "STOPPED",
+      ).length
+    : 0;
   const deletableCounts = selectedFileObjects.filter(
-    (file) => file.downloadStatus === "completed",
+    (file) =>
+      file.downloadStatus === "completed" &&
+      (!file.torrentStatus || file.torrentStatus === "STOPPED"),
   ).length;
-  const loadedFiles = selectedFileObjects.filter((file) => file.loaded);
+  const sharableFiles = shareEnabled
+    ? selectedFileObjects.filter(
+        (file) =>
+          file.downloadStatus === "completed" &&
+          file.source !== "SEED" &&
+          !file.sharedByMe &&
+          file.shareStatus !== "PUBLISHED" &&
+          file.shareStatus !== "PUBLISH_PENDING",
+      )
+    : [];
+  const loadedFiles = selectedFileObjects.filter(
+    (file) => file.loaded && file.source !== "SEED",
+  );
 
   const controlButtons = [
     {
@@ -80,6 +134,7 @@ export default function FileBatchControl({
       filter: (file: TelegramFile) => file.downloadStatus === "paused",
       validCount: continuableCounts,
       showConfirm: false,
+      extra: { isPaused: false },
     },
     {
       url: "/files/toggle-pause-download-multiple",
@@ -90,16 +145,47 @@ export default function FileBatchControl({
       filter: (file: TelegramFile) => file.downloadStatus === "downloading",
       validCount: pausableCounts,
       showConfirm: false,
+      extra: { isPaused: true },
     },
     {
       url: "/files/cancel-download-multiple",
       label: "取消",
-      tooltip: `取消 ${cancelableCounts} 个正在进行的下载`,
+      tooltip: `取消 ${cancelDownloadCounts} 个正在进行的下载`,
       className: "bg-red-500 hover:bg-red-600 text-white",
       icon: <SquareX className="mr-2 h-4 w-4" />,
-      filter: (file: TelegramFile) => file.downloadStatus === "downloading",
-      validCount: cancelableCounts,
+      filter: (file: TelegramFile) =>
+        file.downloadStatus === "downloading" ||
+        file.downloadStatus === "paused",
+      validCount: cancelDownloadCounts,
       showConfirm: true,
+    },
+    {
+      url: "/files/toggle-pause-download-multiple",
+      label: "继续做种",
+      tooltip: `开始/继续做种 ${seedResumableCounts} 个文件`,
+      className: "bg-emerald-500 hover:bg-emerald-600 text-white",
+      icon: <RadioTower className="mr-2 h-4 w-4" />,
+      filter: (file: TelegramFile) =>
+        file.downloadStatus === "completed" &&
+        (file.torrentStatus === "STOPPED" || file.torrentStatus === "PAUSED"),
+      validCount: seedResumableCounts,
+      showConfirm: false,
+      extra: { isPaused: false },
+      fileMapper: seedFileMapper,
+    },
+    {
+      url: "/files/cancel-download-multiple",
+      label: "停止做种",
+      tooltip: `停止做种 ${seedStoppableCounts} 个文件`,
+      className: "bg-red-500 hover:bg-red-600 text-white",
+      icon: <CircleStop className="mr-2 h-4 w-4" />,
+      filter: (file: TelegramFile) =>
+        file.downloadStatus === "completed" &&
+        !!file.torrentStatus &&
+        file.torrentStatus !== "STOPPED",
+      validCount: seedStoppableCounts,
+      showConfirm: true,
+      fileMapper: seedFileMapper,
     },
     {
       url: "/files/remove-multiple",
@@ -107,7 +193,9 @@ export default function FileBatchControl({
       tooltip: `删除 ${deletableCounts} 个已完成的文件`,
       className: "bg-red-500 hover:bg-red-600 text-white",
       icon: <FileX className="mr-2 h-4 w-4" />,
-      filter: (file: TelegramFile) => file.downloadStatus === "completed",
+      filter: (file: TelegramFile) =>
+        file.downloadStatus === "completed" &&
+        (!file.torrentStatus || file.torrentStatus === "STOPPED"),
       validCount: deletableCounts,
       showConfirm: true,
     },
@@ -152,6 +240,12 @@ export default function FileBatchControl({
                 {...button}
               />
             ))}
+            {sharableFiles.length > 0 && (
+              <BatchShareButton
+                sharableFiles={sharableFiles}
+                setSelectedFiles={setSelectedFiles}
+              />
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -179,6 +273,7 @@ interface ControlButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   selectedFiles: Set<number>;
   setSelectedFiles: (files: Set<number>) => void;
   files: TelegramFile[];
+  fileMapper?: (file: TelegramFile) => Record<string, unknown> | null;
 }
 
 function ControlButton({
@@ -194,6 +289,7 @@ function ControlButton({
   selectedFiles,
   setSelectedFiles,
   files,
+  fileMapper,
 }: ControlButtonProps) {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
@@ -205,6 +301,14 @@ function ControlButton({
   const validFiles = selectedFileObjects.filter(filter);
   const invalidCount = selectedFiles.size - validFiles.length;
 
+  const defaultFileMapper = (file: TelegramFile): Record<string, unknown> => ({
+    telegramId: file.telegramId ?? 0,
+    chatId: file.chatId ?? 0,
+    messageId: file.messageId ?? 0,
+    fileId: file.id ?? 0,
+    uniqueId: file.uniqueId,
+  });
+
   const { trigger, isMutating } = useSWRMutation(
     url,
     (
@@ -213,13 +317,7 @@ function ControlButton({
         arg,
       }: {
         arg: {
-          files: Array<{
-            telegramId: number;
-            chatId: number;
-            messageId: number;
-            fileId: number;
-            uniqueId: string;
-          }>;
+          files: Array<Record<string, unknown>>;
         } & Record<string, any>;
       },
     ) => POST(key, arg),
@@ -236,14 +334,19 @@ function ControlButton({
   );
 
   const handleAction = () => {
+    const mapper = fileMapper ?? defaultFileMapper;
+    const mappedFiles = validFiles
+      .map(mapper)
+      .filter((f): f is Record<string, unknown> => f !== null);
+    if (mappedFiles.length === 0) {
+      toast({
+        variant: "error",
+        description: "没有可处理的有效文件。",
+      });
+      return;
+    }
     void trigger({
-      files: validFiles.map((file) => ({
-        telegramId: file.telegramId ?? 0,
-        chatId: file.chatId ?? 0,
-        messageId: file.messageId ?? 0,
-        fileId: file.id ?? 0,
-        uniqueId: file.uniqueId,
-      })),
+      files: mappedFiles,
       ...extra,
     });
     setConfirmDialogOpen(false);
@@ -294,6 +397,10 @@ function ControlButton({
               ) : label === "取消" ? (
                 <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
                   <SquareX className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+              ) : label === "停止做种" ? (
+                <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
+                  <CircleStop className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
               ) : label === "下载" ? (
                 <div className="rounded-full bg-blue-100 p-3 dark:bg-blue-900/30">
@@ -379,7 +486,7 @@ function ControlButton({
             <Button
               onClick={handleAction}
               className={`min-w-24 ${
-                label === "删除" || label === "取消"
+                label === "删除" || label === "取消" || label === "停止做种"
                   ? "bg-red-500 text-white hover:bg-red-600"
                   : label === "继续"
                     ? "bg-green-500 text-white hover:bg-green-600"
@@ -389,6 +496,146 @@ function ControlButton({
               }`}
             >
               {`${label}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function BatchShareButton({
+  sharableFiles,
+  setSelectedFiles,
+}: {
+  sharableFiles: TelegramFile[];
+  setSelectedFiles: (files: Set<number>) => void;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleShare = async () => {
+    setSubmitting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of sharableFiles) {
+      try {
+        await request("/share/resources", {
+          method: "POST",
+          body: JSON.stringify({
+            fileUniqueId: file.uniqueId,
+            title: file.fileName || file.caption || "Telegram file",
+            description: file.caption || null,
+            tags: file.tags
+              ?.split(",")
+              .map((t) => t.trim())
+              .filter(Boolean) ?? [],
+            category: null,
+            accessScope: "OWNER_ONLY",
+            publicMessageUrl: null,
+            immediateReseed: file.downloadStatus === "completed",
+            indexOnly: file.downloadStatus !== "completed",
+            autoDownloadOnDemand: file.downloadStatus !== "completed",
+          }),
+        });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    setSubmitting(false);
+    setConfirmOpen(false);
+
+    toast({
+      variant: failCount > 0 ? (successCount > 0 ? "info" : "error") : "success",
+      title: "批量分享完成",
+      description:
+        failCount > 0
+          ? `成功分享 ${successCount} 个，失败 ${failCount} 个。`
+          : `已成功分享 ${successCount} 个文件。`,
+    });
+
+    setSelectedFiles(new Set());
+  };
+
+  return (
+    <>
+      <TooltipWrapper
+        content={`将 ${sharableFiles.length} 个文件分享到 Telegram Seed`}
+      >
+        <Button size="sm" onClick={() => setConfirmOpen(true)} disabled={submitting}>
+          {submitting ? (
+            <LoaderCircle
+              className="mr-2 h-4 w-4 animate-spin"
+              style={{ strokeWidth: "0.8px" }}
+            />
+          ) : (
+            <>
+              <Image
+                src="/telegram-seed.svg"
+                alt=""
+                aria-hidden="true"
+                width={16}
+                height={16}
+                className="mr-2 h-4 w-4 rounded-full bg-white"
+              />
+              分享 ({sharableFiles.length})
+            </>
+          )}
+        </Button>
+      </TooltipWrapper>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-xl sm:max-w-md">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-center text-xl font-semibold">
+              批量分享到 Telegram Seed
+            </DialogTitle>
+            <div className="flex justify-center">
+              <div className="rounded-full bg-cyan-100 p-3 dark:bg-cyan-900/30">
+                <Image
+                  src="/telegram-seed.svg"
+                  alt=""
+                  aria-hidden="true"
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 rounded-full bg-white"
+                />
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="pb-6 pt-2">
+            <p className="mb-3 text-center text-sm text-muted-foreground">
+              将基于当前文件状态，使用自动生成的元数据分享 {sharableFiles.length} 个文件。
+            </p>
+
+            <div className="mt-4 space-y-1 rounded-lg border bg-muted/50 p-4 text-sm text-muted-foreground">
+              <p>• 标题：文件名或说明文字</p>
+              <p>• 描述：文件说明</p>
+              <p>• 标签：文件已有标签</p>
+              <p>• 访问权限：仅所有者</p>
+              <p>• 已下载的文件将立即开始做种</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3 sm:justify-center">
+            <DialogClose asChild>
+              <Button variant="outline" className="min-w-24">
+                取消
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={() => void handleShare()}
+              disabled={submitting}
+              className="min-w-24"
+            >
+              {submitting && (
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              分享
             </Button>
           </DialogFooter>
         </DialogContent>
